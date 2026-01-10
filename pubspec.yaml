@@ -1,0 +1,85 @@
+name: my_music_app
+description: "A cross-platform music application for learning purposes."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Core
+  cupertino_icons: ^1.0.8
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Audio
+  just_audio: ^0.9.43
+  audio_service: ^0.18.17
+  audio_session: ^0.1.25
+  rxdart: ^0.28.0
+
+  # Database
+  drift: ^2.24.0
+  sqlite3_flutter_libs: ^0.5.31
+  path_provider: ^2.1.5
+  path: ^1.9.1
+
+  # Permissions
+  permission_handler: ^11.4.0
+
+  # Audio Metadata - using direct file scanning instead of on_audio_query
+
+  # YouTube
+  youtube_explode_dart: ^3.0.5
+
+  # UI
+  flutter_animate: ^4.5.2
+  google_fonts: ^6.2.1
+  cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
+
+  # File Picking
+  file_picker: ^9.2.1
+
+  # Drag & Drop
+  reorderable_grid_view: ^2.2.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  riverpod_generator: ^2.6.4
+  build_runner: ^2.4.15
+  drift_dev: ^2.24.0
+  flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+
+# App Icon Configuration
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "music_app_logo.png"
+  adaptive_icon_background: "#1a1a2e"
+  adaptive_icon_foreground: "music_app_logo.png"
+
+# Splash Screen Configuration
+flutter_native_splash:
+  color: "#1a1a2e"
+  image: "music_app_start_img.png"
+  android: true
+  ios: false
+  android_12:
+    color: "#1a1a2e"
+    image: "music_app_start_img.png"
