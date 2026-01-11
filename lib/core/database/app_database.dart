@@ -94,6 +94,16 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
+  /// Rename song title and/or artist
+  Future<void> renameSong(int songId, {String? title, String? artist}) async {
+    await (update(songs)..where((t) => t.id.equals(songId))).write(
+      SongsCompanion(
+        title: title != null ? Value(title) : const Value.absent(),
+        artist: artist != null ? Value(artist) : const Value.absent(),
+      ),
+    );
+  }
+
   /// Get recently played songs
   Future<List<Song>> getRecentlyPlayed({int limit = 20}) {
     return (select(songs)

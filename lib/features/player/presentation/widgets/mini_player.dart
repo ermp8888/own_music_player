@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/audio_handler.dart';
-import '../../../../core/utils/formatters.dart';
-import '../../../../shared/widgets/glass_container.dart';
 import '../providers/player_provider.dart';
 import '../screens/player_screen.dart';
 import '../../../../main.dart';
 
-/// Mini player widget shown at bottom of screens
+/// Mini player widget shown at bottom of screens - simplified design
 class MiniPlayer extends ConsumerStatefulWidget {
   const MiniPlayer({super.key});
 
@@ -17,44 +15,40 @@ class MiniPlayer extends ConsumerStatefulWidget {
 }
 
 class _MiniPlayerState extends ConsumerState<MiniPlayer> {
-  bool _isDismissed = false;
-
-  void _dismissPlayer() {
-    setState(() => _isDismissed = true);
-    // Stop the audio
-    globalAudioHandler?.stop();
-  }
-
-  void _resetDismissed() {
-    if (_isDismissed) {
-      setState(() => _isDismissed = false);
-    }
-  }
+  int? _lastSongId;
 
   @override
   Widget build(BuildContext context) {
     final currentSong = ref.watch(currentSongProvider);
     final isPlaying = ref.watch(isPlayingProvider);
     final positionData = ref.watch(positionDataProvider);
+    final isDismissed = ref.watch(miniPlayerDismissedProvider);
 
     return currentSong.when(
       data: (song) {
-        if (song == null || _isDismissed) return const SizedBox.shrink();
+        if (song == null) return const SizedBox.shrink();
         
-        // Reset dismissed state when a new song starts
-        _resetDismissed();
+        // Reset dismiss state when song changes
+        if (_lastSongId != null && _lastSongId != song.id) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ref.read(miniPlayerDismissedProvider.notifier).state = false;
+          });
+        }
+        _lastSongId = song.id;
+        
+        if (isDismissed) return const SizedBox.shrink();
 
         return Dismissible(
           key: ValueKey('mini_player_${song.id}'),
           direction: DismissDirection.horizontal,
           confirmDismiss: (direction) async {
-            // Only allow dismiss when paused
             final playing = isPlaying.valueOrNull ?? false;
             if (!playing) {
-              _dismissPlayer();
+              // Set global dismiss state
+              ref.read(miniPlayerDismissedProvider.notifier).state = true;
+              globalAudioHandler?.stop();
               return true;
             }
-            // Show feedback that can't dismiss while playing
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Pause the song first to dismiss'),
@@ -105,144 +99,125 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                 ),
               );
             },
-            child: GlassContainer(
+            child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: ThemeConstants.cardColor,
+                borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
-                    children: [
-                      // Album art
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          gradient: ThemeConstants.primaryGradient,
-                        ),
-                        child: const Icon(
-                          Icons.music_note_rounded,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Song info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              song.title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              song.artist,
-                              style: TextStyle(
-                                color: ThemeConstants.textSecondary,
-                                fontSize: 12,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Controls
-                      IconButton(
-                        onPressed: () {
-                          ref.read(playerStateProvider.notifier).previous();
-                        },
-                        icon: const Icon(Icons.skip_previous_rounded),
-                        iconSize: 28,
-                      ),
-                      isPlaying.when(
-                        data: (playing) => Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            gradient: ThemeConstants.primaryGradient,
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            onPressed: () {
-                              ref.read(playerStateProvider.notifier).togglePlay();
-                            },
-                            icon: Icon(
-                              playing
-                                  ? Icons.pause_rounded
-                                  : Icons.play_arrow_rounded,
-                              color: Colors.white,
-                            ),
-                            iconSize: 24,
-                            padding: EdgeInsets.zero,
-                          ),
-                        ),
-                        loading: () => const SizedBox(
-                          width: 42,
-                          height: 42,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        error: (_, __) => const Icon(Icons.error),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          ref.read(playerStateProvider.notifier).next();
-                        },
-                        icon: const Icon(Icons.skip_next_rounded),
-                        iconSize: 28,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  // Progress bar
+                  // Progress bar at top
                   positionData.when(
-                    data: (data) => Column(
+                    data: (data) => ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(ThemeConstants.radiusMedium),
+                      ),
+                      child: LinearProgressIndicator(
+                        value: data.duration.inMilliseconds > 0
+                            ? data.position.inMilliseconds /
+                                data.duration.inMilliseconds
+                            : 0,
+                        backgroundColor: Colors.transparent,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          ThemeConstants.primaryColor,
+                        ),
+                        minHeight: 2,
+                      ),
+                    ),
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
+                  // Content
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+                    child: Row(
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(2),
-                          child: LinearProgressIndicator(
-                            value: data.duration.inMilliseconds > 0
-                                ? data.position.inMilliseconds /
-                                    data.duration.inMilliseconds
-                                : 0,
-                            backgroundColor: ThemeConstants.cardColor,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              ThemeConstants.primaryColor,
-                            ),
-                            minHeight: 3,
+                        // Album art
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            gradient: ThemeConstants.tealGradient,
+                          ),
+                          child: const Icon(
+                            Icons.music_note_rounded,
+                            color: Colors.white,
+                            size: 22,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              Formatters.formatDuration(data.position),
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: ThemeConstants.textMuted,
+                        const SizedBox(width: 12),
+                        // Song info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                song.title,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: ThemeConstants.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                            Text(
-                              Formatters.formatDuration(data.duration),
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: ThemeConstants.textMuted,
+                              Text(
+                                song.artist,
+                                style: TextStyle(
+                                  color: ThemeConstants.primaryColor,
+                                  fontSize: 12,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
+                            ],
+                          ),
+                        ),
+                        // Queue icon
+                        IconButton(
+                          onPressed: () {
+                            // TODO: Show queue
+                          },
+                          icon: const Icon(Icons.queue_music_rounded),
+                          color: ThemeConstants.textMuted,
+                          iconSize: 24,
+                        ),
+                        // Play/Pause button
+                        isPlaying.when(
+                          data: (playing) => Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: ThemeConstants.primaryColor,
+                              shape: BoxShape.circle,
                             ),
-                          ],
+                            child: IconButton(
+                              onPressed: () {
+                                ref.read(playerStateProvider.notifier).togglePlay();
+                              },
+                              icon: Icon(
+                                playing
+                                    ? Icons.pause_rounded
+                                    : Icons.play_arrow_rounded,
+                                color: Colors.white,
+                              ),
+                              iconSize: 22,
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+                          loading: () => const SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          error: (_, __) => const Icon(Icons.error),
                         ),
                       ],
                     ),
-                    loading: () => const LinearProgressIndicator(),
-                    error: (_, __) => const SizedBox.shrink(),
                   ),
                 ],
               ),

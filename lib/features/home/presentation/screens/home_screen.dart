@@ -3,25 +3,71 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../shared/widgets/gradient_background.dart';
-import '../../../../shared/widgets/glass_container.dart';
-import '../../../../shared/widgets/section_header.dart';
-import '../../../../shared/animations/scale_tap_animation.dart';
+import '../../../../shared/widgets/bottom_nav_bar.dart';
 import '../../../local_music/presentation/providers/library_provider.dart';
 import '../../../local_music/presentation/screens/library_screen.dart';
+import '../../../local_music/presentation/screens/recently_played_screen.dart';
 import '../../../player/presentation/providers/player_provider.dart';
-import '../../../player/presentation/screens/player_screen.dart';
 import '../../../player/presentation/widgets/mini_player.dart';
 import '../../../playlists/presentation/screens/playlists_screen.dart';
+import '../../../playlists/presentation/screens/liked_songs_screen.dart';
 import '../../../youtube_import/presentation/screens/youtube_import_screen.dart';
+import '../../../youtube_import/presentation/screens/downloads_screen.dart';
+import '../../../../main.dart' show sharedUrlProvider;
 
-/// Home screen with premium dark UI
-class HomeScreen extends ConsumerWidget {
+/// Provider for YouTube imported songs (songs without local file or with specific source)
+final youtubeImportedSongsProvider = FutureProvider<List<dynamic>>((ref) async {
+  final database = ref.watch(databaseProvider);
+  final allSongs = await database.getAllSongs();
+  // Filter songs that were downloaded from YouTube (have specific path pattern)
+  return allSongs.where((song) => 
+    song.filePath.contains('MyMusicApp') || 
+    song.filePath.contains('YouTube') ||
+    song.filePath.contains('Download')
+  ).toList();
+});
+
+/// Home screen with premium dark UI and bottom navigation
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final libraryState = ref.watch(libraryProvider);
-    final currentSong = ref.watch(currentSongProvider);
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  int _currentNavIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSharedUrl();
+  }
+
+  void _checkSharedUrl() {
+    // Check if there's a shared URL and navigate to YouTube Import
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final sharedUrl = ref.read(sharedUrlProvider);
+      if (sharedUrl != null && sharedUrl.isNotEmpty) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const YouTubeImportScreen()),
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Watch for shared URL changes
+    ref.listen<String?>(sharedUrlProvider, (previous, next) {
+      if (next != null && next.isNotEmpty) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const YouTubeImportScreen()),
+        );
+      }
+    });
 
     return Scaffold(
       body: GradientBackground(
@@ -29,96 +75,25 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             children: [
               Expanded(
-                child: CustomScrollView(
-                  slivers: [
-                    // App Bar
-                    SliverAppBar(
-                      floating: true,
-                      backgroundColor: Colors.transparent,
-                      elevation: 0,
-                      title: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              gradient: ThemeConstants.primaryGradient,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.music_note_rounded,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'MyMusicApp',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 22,
-                            ),
-                          ),
-                        ],
-                      ),
-                      actions: [
-                        IconButton(
-                          onPressed: () {
-                            ref.read(libraryProvider.notifier).scanMusic();
-                          },
-                          icon: libraryState.isScanning
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.refresh_rounded),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                    ),
-
-                    // Hero Player Card
-                    SliverToBoxAdapter(
-                      child: _buildHeroCard(context, ref, currentSong),
-                    ),
-
-                    // Navigation Grid
-                    SliverToBoxAdapter(
-                      child: _buildNavigationGrid(context),
-                    ),
-
-                    // Recently Played
-                    if (libraryState.recentlyPlayed.isNotEmpty) ...[
-                      SliverToBoxAdapter(
-                        child: SectionHeader(
-                          title: 'Recently Played',
-                          onSeeAllPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const LibraryScreen()),
-                          ),
-                        ),
-                      ),
-                      SliverToBoxAdapter(
-                        child: _buildRecentlyPlayed(context, ref, libraryState),
-                      ),
-                    ],
-
-                    // Quick Stats
-                    SliverToBoxAdapter(
-                      child: _buildQuickStats(context, libraryState),
-                    ),
-
-                    // Bottom padding for mini player
-                    const SliverToBoxAdapter(
-                      child: SizedBox(height: 100),
-                    ),
-                  ],
-                ),
+                child: _buildCurrentPage(),
               ),
               // Mini Player
               const MiniPlayer(),
+              // Bottom Navigation
+              BottomNavBar(
+                currentIndex: _currentNavIndex,
+                onTap: (index) {
+                  if (index == 2) {
+                    // Library tab - navigate to LibraryScreen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LibraryScreen()),
+                    );
+                  } else {
+                    setState(() => _currentNavIndex = index);
+                  }
+                },
+              ),
             ],
           ),
         ),
@@ -126,387 +101,513 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeroCard(
-      BuildContext context, WidgetRef ref, AsyncValue currentSong) {
+  Widget _buildCurrentPage() {
+    switch (_currentNavIndex) {
+      case 0:
+        return _HomeContent();
+      case 1:
+        return _ExplorePage();
+      case 3:
+        return _SettingsPage();
+      default:
+        return _HomeContent();
+    }
+  }
+}
+
+/// Home content with greeting, YouTube Import card, and sections
+class _HomeContent extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final libraryState = ref.watch(libraryProvider);
+
+    return CustomScrollView(
+      slivers: [
+        // Header with greeting
+        SliverToBoxAdapter(
+          child: _buildHeader(context, ref),
+        ),
+
+        // YouTube Import Promo Card
+        SliverToBoxAdapter(
+          child: _buildYouTubeImportCard(context),
+        ),
+
+        // Recently Played Section
+        SliverToBoxAdapter(
+          child: _buildSectionHeader('Recently Played', () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const RecentlyPlayedScreen()),
+            );
+          }),
+        ),
+        SliverToBoxAdapter(
+          child: _buildRecentlyPlayed(context, ref, libraryState),
+        ),
+
+        // Jump Back In Section
+        SliverToBoxAdapter(
+          child: _buildJumpBackInSection(context, ref),
+        ),
+
+        // Bottom padding
+        const SliverToBoxAdapter(
+          child: SizedBox(height: 20),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      child: Row(
+        children: [
+          // Avatar
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: ThemeConstants.tealGradient,
+            ),
+            child: const Icon(
+              Icons.person_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Greeting
+          const Expanded(
+            child: Text(
+              'Welcome to DownTune',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: ThemeConstants.textPrimary,
+              ),
+            ),
+          ),
+          // Search icon
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LibraryScreen()),
+              );
+            },
+            icon: const Icon(Icons.search_rounded),
+            color: ThemeConstants.textPrimary,
+          ),
+          // Notification icon
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.notifications_outlined),
+            color: ThemeConstants.textPrimary,
+          ),
+        ],
+      ),
+    ).animate().fadeIn().slideY(begin: -0.2, end: 0);
+  }
+
+  Widget _buildYouTubeImportCard(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(20),
-      child: currentSong.when(
-        data: (song) {
-          if (song == null) {
-            return GlassContainer(
-              padding: const EdgeInsets.all(24),
-              child: Column(
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const YouTubeImportScreen()),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: ThemeConstants.youtubeImportGradient,
+            borderRadius: BorderRadius.circular(ThemeConstants.radiusLarge),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // YouTube icon
                   Container(
-                    width: 80,
-                    height: 80,
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      gradient: ThemeConstants.primaryGradient,
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  // NEW FEATURE badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: ThemeConstants.primaryColor,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(
-                      Icons.headphones_rounded,
-                      color: Colors.white,
-                      size: 40,
+                    child: const Text(
+                      'NEW FEATURE',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Welcome to MyMusicApp',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Scan your music library to get started',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      ref.read(libraryProvider.notifier).scanMusic();
-                    },
-                    icon: const Icon(Icons.search),
-                    label: const Text('Scan Music'),
                   ),
                 ],
               ),
-            ).animate().fadeIn().slideY(begin: 0.2, end: 0);
-          }
-
-          return GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const PlayerScreen()),
-            ),
-            child: GlassContainer(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      gradient: ThemeConstants.primaryGradient,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: ThemeConstants.glowShadow,
-                    ),
-                    child: const Icon(
-                      Icons.music_note_rounded,
-                      color: Colors.white,
-                      size: 48,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Now Playing',
-                          style: TextStyle(
-                            color: ThemeConstants.primaryColor,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          song.title,
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          song.artist,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right_rounded, color: ThemeConstants.textMuted),
-                ],
+              const SizedBox(height: 16),
+              const Text(
+                'YouTube Import',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-          ).animate().fadeIn().slideY(begin: 0.2, end: 0);
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => const SizedBox.shrink(),
-      ),
-    );
-  }
-
-  Widget _buildNavigationGrid(BuildContext context) {
-    final items = [
-      _NavItem(
-        title: 'Local Songs',
-        subtitle: 'Your music library',
-        icon: Icons.library_music_rounded,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-        ),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const LibraryScreen()),
-        ),
-      ),
-      _NavItem(
-        title: 'Playlists',
-        subtitle: 'Your collections',
-        icon: Icons.playlist_play_rounded,
-        gradient: const LinearGradient(
-          colors: [Color(0xFFEC4899), Color(0xFFF472B6)],
-        ),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const PlaylistsScreen()),
-        ),
-      ),
-      _NavItem(
-        title: 'YouTube Import',
-        subtitle: 'Download audio',
-        icon: Icons.download_rounded,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF10B981), Color(0xFF34D399)],
-        ),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const YouTubeImportScreen()),
-        ),
-      ),
-      _NavItem(
-        title: 'Favorites',
-        subtitle: 'Liked songs',
-        icon: Icons.favorite_rounded,
-        gradient: const LinearGradient(
-          colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
-        ),
-        onTap: () {
-          // TODO: Navigate to favorites
-        },
-      ),
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.4,
-        ),
-        itemCount: items.length,
-        itemBuilder: (context, index) {
-          return _buildNavCard(items[index], index);
-        },
-      ),
-    );
-  }
-
-  Widget _buildNavCard(_NavItem item, int index) {
-    return ScaleTapAnimation(
-      onTap: item.onTap,
-      child: GlassContainer(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                gradient: item.gradient,
-                borderRadius: BorderRadius.circular(10),
+              const SizedBox(height: 8),
+              Text(
+                'Sync your playlists and videos directly to your library.',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 14,
+                ),
               ),
-              child: Icon(
-                item.icon,
-                color: Colors.white,
-                size: 22,
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
+              const SizedBox(height: 20),
+              // Import Now button
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+                ),
+                child: const Center(
+                  child: Text(
+                    'Import Now',
+                    style: TextStyle(
+                      color: Color(0xFF4D5BD4),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.2, end: 0);
+  }
+
+  Widget _buildSectionHeader(String title, VoidCallback onSeeAll) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: ThemeConstants.textPrimary,
+            ),
+          ),
+          GestureDetector(
+            onTap: onSeeAll,
+            child: Text(
+              'See all',
+              style: TextStyle(
+                fontSize: 14,
+                color: ThemeConstants.primaryColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentlyPlayed(BuildContext context, WidgetRef ref, LibraryState state) {
+    // Show all songs if no recently played, otherwise show recently played
+    final songsToShow = state.recentlyPlayed.isNotEmpty 
+        ? state.recentlyPlayed 
+        : state.songs;
+    
+    if (songsToShow.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Container(
+          height: 100,
+          decoration: BoxDecoration(
+            color: ThemeConstants.cardColor,
+            borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.music_note_rounded, color: ThemeConstants.textMuted, size: 32),
+                const SizedBox(height: 8),
                 Text(
-                  item.subtitle,
-                  style: TextStyle(
-                    color: ThemeConstants.textMuted,
-                    fontSize: 11,
-                  ),
+                  'No songs yet. Scan your library!',
+                  style: TextStyle(color: ThemeConstants.textMuted, fontSize: 13),
                 ),
               ],
             ),
-          ],
+          ),
         ),
-      ),
-    ).animate(delay: Duration(milliseconds: 100 * index)).fadeIn().slideX(
-          begin: 0.2,
-          end: 0,
-          curve: Curves.easeOutCubic,
-        );
-  }
-
-  Widget _buildRecentlyPlayed(
-      BuildContext context, WidgetRef ref, LibraryState state) {
+      );
+    }
+    
     return SizedBox(
-      height: 160,
+      height: 180,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: state.recentlyPlayed.take(10).length,
+        itemCount: songsToShow.take(10).length,
         itemBuilder: (context, index) {
-          final song = state.recentlyPlayed[index];
+          final song = songsToShow[index];
           return Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: ScaleTapAnimation(
+            padding: const EdgeInsets.only(right: 16),
+            child: GestureDetector(
               onTap: () {
+                // Reset mini player dismissed state when playing a new song
+                ref.read(miniPlayerDismissedProvider.notifier).state = false;
                 ref.read(playerStateProvider.notifier).playSong(
                       song,
-                      queue: state.recentlyPlayed,
+                      queue: songsToShow,
                     );
               },
               child: SizedBox(
-                width: 120,
+                width: 130,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Album art
                     Container(
-                      width: 100,
-                      height: 100,
+                      width: 130,
+                      height: 130,
                       decoration: BoxDecoration(
-                        gradient: ThemeConstants.cardGradient,
-                        borderRadius: BorderRadius.circular(16),
+                        gradient: _getAlbumGradient(index),
+                        borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
                       ),
-                      child: const Icon(
-                        Icons.music_note_rounded,
-                        color: ThemeConstants.textMuted,
-                        size: 40,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            Icons.music_note_rounded,
+                            color: Colors.white.withValues(alpha: 0.5),
+                            size: 40,
+                          ),
+                          if (song.isFavorite)
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Icon(
+                                Icons.favorite_rounded,
+                                color: Colors.red,
+                                size: 18,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Text(
                       song.title,
                       style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: ThemeConstants.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
                     ),
                     Text(
                       song.artist,
                       style: TextStyle(
                         color: ThemeConstants.textMuted,
-                        fontSize: 10,
+                        fontSize: 11,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
               ),
             ),
-          )
-              .animate(delay: Duration(milliseconds: 50 * index))
-              .fadeIn()
-              .slideX(begin: 0.2, end: 0);
+          ).animate(delay: Duration(milliseconds: 50 * index)).fadeIn().slideX(begin: 0.2, end: 0);
         },
       ),
     );
   }
 
-  Widget _buildQuickStats(BuildContext context, LibraryState state) {
+  LinearGradient _getAlbumGradient(int index) {
+    final gradients = [
+      ThemeConstants.tealGradient,
+      const LinearGradient(colors: [Color(0xFFF5A962), Color(0xFFE8945A)]),
+      ThemeConstants.cardGradient,
+      ThemeConstants.primaryGradient,
+    ];
+    return gradients[index % gradients.length];
+  }
+
+  Widget _buildJumpBackInSection(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.all(20),
-      child: GlassContainer(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Jump Back In',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: ThemeConstants.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Use Row with Expanded for equal sizing
+          Row(
+            children: [
+              Expanded(
+                child: _buildQuickAccessButton(
+                  context,
+                  icon: Icons.favorite_rounded,
+                  label: 'Liked Songs',
+                  color: const Color(0xFF9B7FE6),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LikedSongsScreen()),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildQuickAccessButton(
+                  context,
+                  icon: Icons.playlist_play_rounded,
+                  label: 'Playlists',
+                  color: ThemeConstants.primaryColor,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PlaylistsScreen()),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildQuickAccessButton(
+                  context,
+                  icon: Icons.download_rounded,
+                  label: 'Downloads',
+                  color: Colors.red,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const DownloadsScreen()),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0);
+  }
+
+  Widget _buildQuickAccessButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 80,
+        decoration: BoxDecoration(
+          color: ThemeConstants.cardColor,
+          borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildStatItem(
-              context,
-              Icons.library_music_rounded,
-              '${state.songs.length}',
-              'Songs',
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LibraryScreen()),
-              ),
-            ),
             Container(
-              width: 1,
-              height: 40,
-              color: ThemeConstants.glassBorderColor,
-            ),
-            _buildStatItem(
-              context,
-              Icons.access_time_rounded,
-              '${state.recentlyPlayed.length}',
-              'Recently',
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LibraryScreen()),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: 20,
               ),
             ),
-            Container(
-              width: 1,
-              height: 40,
-              color: ThemeConstants.glassBorderColor,
-            ),
-            _buildStatItem(
-              context,
-              Icons.trending_up_rounded,
-              '${state.mostPlayed.length}',
-              'Top Played',
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LibraryScreen()),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                color: ThemeConstants.textPrimary,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
       ),
-    ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0);
+    );
   }
+}
 
-  Widget _buildStatItem(
-      BuildContext context, IconData icon, String value, String label,
-      {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
+/// Explore page placeholder
+class _ExplorePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: ThemeConstants.primaryColor, size: 24),
-          const SizedBox(height: 8),
+          Icon(
+            Icons.explore_rounded,
+            size: 64,
+            color: ThemeConstants.textMuted,
+          ),
+          const SizedBox(height: 16),
           Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
+            'Explore',
+            style: TextStyle(
+              color: ThemeConstants.textSecondary,
               fontSize: 18,
             ),
           ),
+          const SizedBox(height: 8),
           Text(
-            label,
+            'Coming Soon',
             style: TextStyle(
               color: ThemeConstants.textMuted,
-              fontSize: 12,
+              fontSize: 14,
             ),
           ),
         ],
@@ -515,18 +616,37 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _NavItem {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final LinearGradient gradient;
-  final VoidCallback? onTap;
-
-  _NavItem({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.gradient,
-    this.onTap,
-  });
+/// Settings page placeholder
+class _SettingsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.settings_rounded,
+            size: 64,
+            color: ThemeConstants.textMuted,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Settings',
+            style: TextStyle(
+              color: ThemeConstants.textSecondary,
+              fontSize: 18,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Coming Soon',
+            style: TextStyle(
+              color: ThemeConstants.textMuted,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

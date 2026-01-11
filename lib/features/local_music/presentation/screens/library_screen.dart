@@ -362,6 +362,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
+              leading: const Icon(Icons.edit_rounded),
+              title: const Text('Rename'),
+              onTap: () {
+                Navigator.pop(context);
+                _showRenameDialog(context, ref, song);
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.playlist_add),
               title: const Text('Add to playlist'),
               onTap: () {
@@ -385,6 +393,74 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showRenameDialog(BuildContext context, WidgetRef ref, dynamic song) {
+    final titleController = TextEditingController(text: song.title);
+    final artistController = TextEditingController(text: song.artist);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: ThemeConstants.cardColor,
+        title: const Text('Rename Song'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: InputDecoration(
+                labelText: 'Title',
+                filled: true,
+                fillColor: ThemeConstants.backgroundColor,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: artistController,
+              decoration: InputDecoration(
+                labelText: 'Artist',
+                filled: true,
+                fillColor: ThemeConstants.backgroundColor,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newTitle = titleController.text.trim();
+              final newArtist = artistController.text.trim();
+              if (newTitle.isNotEmpty) {
+                await ref.read(databaseProvider).renameSong(
+                  song.id,
+                  title: newTitle.isNotEmpty ? newTitle : null,
+                  artist: newArtist.isNotEmpty ? newArtist : null,
+                );
+                ref.read(libraryProvider.notifier).loadLibrary();
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Song renamed')),
+                );
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }

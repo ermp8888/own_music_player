@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import 'core/database/app_database.dart';
 import 'core/services/audio_handler.dart';
@@ -10,6 +12,9 @@ import 'features/player/presentation/providers/player_provider.dart';
 
 /// Global audio handler instance
 MyAudioHandler? globalAudioHandler;
+
+/// Global shared URL provider for receiving YouTube links from share menu
+final sharedUrlProvider = StateProvider<String?>((ref) => null);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,13 +51,64 @@ Future<void> main() async {
   );
 }
 
-class MyMusicApp extends StatelessWidget {
+class MyMusicApp extends ConsumerStatefulWidget {
   const MyMusicApp({super.key});
+
+  @override
+  ConsumerState<MyMusicApp> createState() => _MyMusicAppState();
+}
+
+class _MyMusicAppState extends ConsumerState<MyMusicApp> {
+  late StreamSubscription _intentSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _initShareReceiver();
+  }
+
+  void _initShareReceiver() {
+    // Listen for shared media when app is already open
+    _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen(
+      (List<SharedMediaFile> value) {
+        if (value.isNotEmpty) {
+          _handleSharedMedia(value.first);
+        }
+      },
+      onError: (err) {
+        debugPrint('Share intent stream error: $err');
+      },
+    );
+
+    // Get shared media if app was launched from share
+    ReceiveSharingIntent.instance.getInitialMedia().then((List<SharedMediaFile> value) {
+      if (value.isNotEmpty) {
+        _handleSharedMedia(value.first);
+        // Clear the intent so it doesn't trigger again
+        ReceiveSharingIntent.instance.reset();
+      }
+    });
+  }
+
+  void _handleSharedMedia(SharedMediaFile media) {
+    // Check if it's a YouTube URL
+    final path = media.path;
+    if (path.contains('youtube.com') || path.contains('youtu.be')) {
+      ref.read(sharedUrlProvider.notifier).state = path;
+      debugPrint('[Share] Received YouTube URL: $path');
+    }
+  }
+
+  @override
+  void dispose() {
+    _intentSub.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MyMusicApp',
+      title: 'DownTune',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       home: const HomeScreen(),

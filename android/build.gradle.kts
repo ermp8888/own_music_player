@@ -27,6 +27,22 @@ subprojects {
         if (android.namespace == null) {
             android.namespace = "com.${project.name.replace("-", "_").replace(".", "_")}"
         }
+        // Set Java compatibility
+        android.compileOptions {
+            sourceCompatibility = JavaVersion.VERSION_17
+            targetCompatibility = JavaVersion.VERSION_17
+        }
+    }
+}
+
+// Force Kotlin JVM target for all subprojects
+subprojects {
+    plugins.withId("org.jetbrains.kotlin.android") {
+        tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+            compilerOptions {
+                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            }
+        }
     }
 }
 

@@ -46,6 +46,9 @@ dependencies:
   # File Picking
   file_picker: ^9.2.1
 
+  # Share Target
+  receive_sharing_intent: ^1.8.1
+
   # Drag & Drop
   reorderable_grid_view: ^2.2.8
 

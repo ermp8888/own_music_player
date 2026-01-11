@@ -4,25 +4,33 @@ import 'package:flutter/material.dart';
 class ThemeConstants {
   ThemeConstants._();
 
-  // Primary colors
-  static const Color primaryColor = Color(0xFF6366F1); // Indigo
-  static const Color primaryLight = Color(0xFF818CF8);
-  static const Color primaryDark = Color(0xFF4F46E5);
+  // Primary colors - Blue accent
+  static const Color primaryColor = Color(0xFF4D7CFE); // Blue accent
+  static const Color primaryLight = Color(0xFF6B93FF);
+  static const Color primaryDark = Color(0xFF3A5FCC);
 
   // Accent colors
-  static const Color accentColor = Color(0xFFEC4899); // Pink
-  static const Color accentLight = Color(0xFFF472B6);
-  static const Color accentDark = Color(0xFFDB2777);
+  static const Color accentColor = Color(0xFF5B6EF7); // Purple-blue
+  static const Color accentLight = Color(0xFF7B8CFF);
+  static const Color accentDark = Color(0xFF4558CC);
 
-  // Background colors
-  static const Color backgroundColor = Color(0xFF0F0F1A);
-  static const Color surfaceColor = Color(0xFF1A1A2E);
-  static const Color cardColor = Color(0xFF16162A);
+  // Teal accent for album art
+  static const Color tealAccent = Color(0xFF2D8B7A);
+  static const Color tealLight = Color(0xFF3DAA96);
+  
+  // Orange/Coral accent
+  static const Color coralAccent = Color(0xFFF5A962);
+  
+  // Background colors - Darker theme
+  static const Color backgroundColor = Color(0xFF0D0F14);
+  static const Color surfaceColor = Color(0xFF131620);
+  static const Color cardColor = Color(0xFF1A1D28);
+  static const Color cardColorLight = Color(0xFF242836);
 
   // Text colors
   static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFFB0B0C0);
-  static const Color textMuted = Color(0xFF6B6B80);
+  static const Color textSecondary = Color(0xFF9CA3AF);
+  static const Color textMuted = Color(0xFF6B7280);
 
   // Status colors
   static const Color successColor = Color(0xFF10B981);
@@ -31,7 +39,7 @@ class ThemeConstants {
 
   // Glassmorphism
   static const Color glassColor = Color(0x1AFFFFFF);
-  static const Color glassBorderColor = Color(0x33FFFFFF);
+  static const Color glassBorderColor = Color(0x20FFFFFF);
   static const double glassBlur = 10.0;
 
   // Gradients
@@ -41,13 +49,22 @@ class ThemeConstants {
     colors: [primaryColor, accentColor],
   );
 
+  static const LinearGradient youtubeImportGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF4D5BD4),
+      Color(0xFF6B7BF7),
+      Color(0xFF8B9BFF),
+    ],
+  );
+
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
-      Color(0xFF1A1A2E),
-      Color(0xFF0F0F1A),
-      Color(0xFF0A0A14),
+      Color(0xFF131620),
+      Color(0xFF0D0F14),
     ],
   );
 
@@ -55,8 +72,8 @@ class ThemeConstants {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF252540),
-      Color(0xFF1A1A30),
+      Color(0xFF242836),
+      Color(0xFF1A1D28),
     ],
   );
 
@@ -64,8 +81,17 @@ class ThemeConstants {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
-      Color(0xFF2D1B4E),
-      Color(0xFF0F0F1A),
+      Color(0xFF1A1D28),
+      Color(0xFF0D0F14),
+    ],
+  );
+
+  static const LinearGradient tealGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF2D8B7A),
+      Color(0xFF3DAA96),
     ],
   );
 
@@ -80,7 +106,7 @@ class ThemeConstants {
 
   static List<BoxShadow> glowShadow = [
     BoxShadow(
-      color: primaryColor.withValues(alpha: 0.4),
+      color: primaryColor.withValues(alpha: 0.3),
       blurRadius: 20,
       spreadRadius: 2,
     ),

@@ -253,13 +253,22 @@ class PlaylistDetailScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.remove_circle_outline),
+              leading: const Icon(Icons.remove_circle_outline, color: Colors.red),
               title: const Text('Remove from playlist'),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                ref
+                await ref
                     .read(playlistsProvider.notifier)
                     .removeSongFromPlaylist(playlistId, song.id);
+                // Invalidate the stream to force refresh
+                ref.invalidate(playlistSongsStreamProvider(playlistId));
+                // Show feedback
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Removed "${song.title}" from playlist'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
               },
             ),
           ],

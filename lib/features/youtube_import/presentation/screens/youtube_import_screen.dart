@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
@@ -9,7 +10,15 @@ import '../../../../core/constants/theme_constants.dart';
 import '../../../../shared/widgets/gradient_background.dart';
 import '../../../../shared/widgets/glass_container.dart';
 import '../../../local_music/presentation/providers/library_provider.dart';
+import '../../../player/presentation/providers/player_provider.dart';
 import '../../../player/presentation/widgets/mini_player.dart';
+import '../../../../main.dart' show sharedUrlProvider;
+
+/// Download format enum
+enum DownloadFormat { audio, video }
+
+/// Download format provider
+final downloadFormatProvider = StateProvider<DownloadFormat>((ref) => DownloadFormat.audio);
 
 /// Download state
 enum DownloadStatus { idle, fetching, downloading, complete, error }
@@ -79,6 +88,7 @@ class DownloadStateNotifier extends StateNotifier<DownloadState> {
   Video? _currentVideo;
   StreamManifest? _manifest;
   AudioOnlyStreamInfo? _audioStream;
+  MuxedStreamInfo? _videoStream;
 
   /// Parse video ID from URL
   VideoId? _parseVideoId(String url) {
@@ -130,7 +140,6 @@ class DownloadStateNotifier extends StateNotifier<DownloadState> {
       );
 
       // Get stream manifest with specific clients that work better
-      // Using safari and androidVr clients as recommended in docs
       _manifest = await _yt!.videos.streamsClient.getManifest(
         videoId,
         ytClients: [
@@ -146,21 +155,24 @@ class DownloadStateNotifier extends StateNotifier<DownloadState> {
       // Get best audio stream
       if (_manifest!.audioOnly.isNotEmpty) {
         _audioStream = _manifest!.audioOnly.withHighestBitrate();
-        debugPrint('[YT] Selected: ${_audioStream!.container.name} - ${_audioStream!.bitrate.kiloBitsPerSecond.toInt()} kbps');
-      } else if (_manifest!.muxed.isNotEmpty) {
-        // Fallback to muxed if no audio-only available
-        debugPrint('[YT] No audio-only streams, using muxed');
+        debugPrint('[YT] Selected audio: ${_audioStream!.container.name} - ${_audioStream!.bitrate.kiloBitsPerSecond.toInt()} kbps');
+      }
+      
+      // Get best video stream (muxed)
+      if (_manifest!.muxed.isNotEmpty) {
+        _videoStream = _manifest!.muxed.withHighestBitrate();
+        debugPrint('[YT] Selected video: ${_videoStream!.container.name} - ${_videoStream!.videoQuality}');
       }
 
-      if (_audioStream == null && _manifest!.muxed.isEmpty) {
+      if (_audioStream == null && _videoStream == null) {
         state = state.copyWith(
           status: DownloadStatus.error,
-          errorMessage: 'No audio streams available for this video',
+          errorMessage: 'No streams available for this video',
         );
         return;
       }
 
-      final size = _audioStream?.size.totalBytes ?? 0;
+      final size = _audioStream?.size.totalBytes ?? _videoStream?.size.totalBytes ?? 0;
       state = state.copyWith(
         status: DownloadStatus.idle,
         totalBytes: size,
@@ -176,12 +188,21 @@ class DownloadStateNotifier extends StateNotifier<DownloadState> {
     }
   }
 
-  /// Download the audio stream
-  Future<void> downloadAudio(String outputDir) async {
-    if (_yt == null || _audioStream == null) {
+  /// Download the stream (audio or video)
+  Future<void> download(String outputDir, DownloadFormat format) async {
+    if (_yt == null) {
       state = state.copyWith(
         status: DownloadStatus.error,
         errorMessage: 'No stream available. Fetch video info first.',
+      );
+      return;
+    }
+    
+    final stream = format == DownloadFormat.audio ? _audioStream : _videoStream;
+    if (stream == null) {
+      state = state.copyWith(
+        status: DownloadStatus.error,
+        errorMessage: 'No ${format.name} stream available for this video.',
       );
       return;
     }
@@ -191,7 +212,7 @@ class DownloadStateNotifier extends StateNotifier<DownloadState> {
         status: DownloadStatus.downloading,
         progress: 0,
         downloadedBytes: 0,
-        debugInfo: 'Preparing download...',
+        debugInfo: 'Preparing ${format.name} download...',
       );
 
       // Ensure output directory exists
@@ -201,30 +222,36 @@ class DownloadStateNotifier extends StateNotifier<DownloadState> {
       }
 
       // Prepare file name
-      final title = _currentVideo?.title ?? 'audio';
+      final title = _currentVideo?.title ?? 'media';
       final safeTitle = title
           .replaceAll(RegExp(r'[<>:"/\\|?*]'), '_')
           .replaceAll(RegExp(r'\s+'), ' ')
           .trim();
-      final extension = _audioStream!.container.name;
+      final extension = format == DownloadFormat.audio 
+          ? (_audioStream?.container.name ?? 'mp3')
+          : (_videoStream?.container.name ?? 'mp4');
       final outputPath = '$outputDir/$safeTitle.$extension';
 
       debugPrint('[YT] Output: $outputPath');
-      state = state.copyWith(debugInfo: 'Starting download...');
+      state = state.copyWith(debugInfo: 'Starting ${format.name} download...');
 
       // Open file for writing
       final file = File(outputPath);
       final fileStream = file.openWrite();
 
-      // Get the stream and pipe to file
-      final totalBytes = _audioStream!.size.totalBytes;
+      // Get the stream
+      final totalBytes = format == DownloadFormat.audio 
+          ? _audioStream!.size.totalBytes 
+          : _videoStream!.size.totalBytes;
       var downloadedBytes = 0;
 
       // Get the actual stream using the library's stream client
-      final stream = _yt!.videos.streamsClient.get(_audioStream!);
+      final dataStream = format == DownloadFormat.audio
+          ? _yt!.videos.streamsClient.get(_audioStream!)
+          : _yt!.videos.streamsClient.get(_videoStream!);
 
       // Pipe with progress tracking
-      await for (final chunk in stream) {
+      await for (final chunk in dataStream) {
         fileStream.add(chunk);
         downloadedBytes += chunk.length;
 
@@ -266,6 +293,7 @@ class DownloadStateNotifier extends StateNotifier<DownloadState> {
     _currentVideo = null;
     _manifest = null;
     _audioStream = null;
+    _videoStream = null;
     state = const DownloadState();
   }
 
@@ -279,7 +307,18 @@ class DownloadStateNotifier extends StateNotifier<DownloadState> {
 /// Disclaimer accepted provider
 final disclaimerAcceptedProvider = StateProvider<bool>((ref) => false);
 
-/// YouTube import screen
+/// Provider for recently downloaded songs
+final recentDownloadsProvider = FutureProvider<List<dynamic>>((ref) async {
+  final database = ref.watch(databaseProvider);
+  final allSongs = await database.getAllSongs();
+  // Filter songs from download directories
+  return allSongs.where((song) => 
+    song.filePath.contains('MyMusicApp') || 
+    song.filePath.contains('Download')
+  ).take(10).toList();
+});
+
+/// YouTube import screen with modern UI
 class YouTubeImportScreen extends ConsumerStatefulWidget {
   const YouTubeImportScreen({super.key});
 
@@ -296,6 +335,22 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
   void initState() {
     super.initState();
     _initOutputDirectory();
+    _checkSharedUrl();
+  }
+
+  void _checkSharedUrl() {
+    // Check if there's a shared URL from Share Target
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final sharedUrl = ref.read(sharedUrlProvider);
+      if (sharedUrl != null && sharedUrl.isNotEmpty) {
+        _urlController.text = sharedUrl;
+        // Clear the shared URL so it doesn't persist
+        ref.read(sharedUrlProvider.notifier).state = null;
+        // Auto-accept disclaimer and fetch info
+        ref.read(disclaimerAcceptedProvider.notifier).state = true;
+        _fetchVideoInfo();
+      }
+    });
   }
 
   Future<void> _initOutputDirectory() async {
@@ -338,34 +393,59 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
   Widget build(BuildContext context) {
     final disclaimerAccepted = ref.watch(disclaimerAcceptedProvider);
     final downloadState = ref.watch(downloadStateProvider);
+    final downloadFormat = ref.watch(downloadFormatProvider);
+    final recentDownloads = ref.watch(recentDownloadsProvider);
 
     return Scaffold(
-      body: GradientBackground(
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: Row(
-                  children: [
-                    IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back_rounded)),
-                    const Expanded(child: Text('YouTube Import', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: _isInitializing
-                    ? const Center(child: CircularProgressIndicator())
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.all(20),
-                        child: !disclaimerAccepted
-                            ? _buildDisclaimerView(context, ref)
-                            : _buildDownloadView(context, ref, downloadState),
+      backgroundColor: ThemeConstants.backgroundColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back_ios_rounded),
+                    color: ThemeConstants.textPrimary,
+                  ),
+                  const Expanded(
+                    child: Text(
+                      'YouTube Import',  // Space added here
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: ThemeConstants.textPrimary,
                       ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(Icons.history_rounded),
+                    color: ThemeConstants.textPrimary,
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(Icons.settings_rounded),
+                    color: ThemeConstants.textPrimary,
+                  ),
+                ],
               ),
-              const MiniPlayer(),
-            ],
-          ),
+            ),
+            Expanded(
+              child: _isInitializing
+                  ? const Center(child: CircularProgressIndicator())
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: !disclaimerAccepted
+                          ? _buildDisclaimerView(context, ref)
+                          : _buildDownloadView(context, ref, downloadState, downloadFormat, recentDownloads),
+                    ),
+            ),
+            const MiniPlayer(),
+          ],
         ),
       ),
     );
@@ -378,7 +458,10 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: ThemeConstants.warningColor.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(
+              color: ThemeConstants.warningColor.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Icon(Icons.warning_amber_rounded, size: 48, color: ThemeConstants.warningColor),
           ),
           const SizedBox(height: 24),
@@ -398,106 +481,47 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
     );
   }
 
-  Widget _buildDownloadView(BuildContext context, WidgetRef ref, DownloadState downloadState) {
+  Widget _buildDownloadView(BuildContext context, WidgetRef ref, DownloadState downloadState, DownloadFormat downloadFormat, AsyncValue recentDownloads) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // URL input
-        GlassContainer(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Enter YouTube URL', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _urlController,
-                decoration: const InputDecoration(hintText: 'https://youtube.com/watch?v=...', prefixIcon: Icon(Icons.link)),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: downloadState.status == DownloadStatus.fetching || downloadState.status == DownloadStatus.downloading
-                      ? null
-                      : _fetchVideoInfo,
-                  icon: downloadState.status == DownloadStatus.fetching
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.search),
-                  label: Text(downloadState.status == DownloadStatus.fetching ? 'Fetching...' : 'Fetch Info'),
-                ),
-              ),
-            ],
+        // ADD URL Section
+        _buildSectionLabel('ADD URL'),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            color: ThemeConstants.cardColor,
+            borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+            border: Border.all(color: ThemeConstants.glassBorderColor),
           ),
-        ),
-
-        const SizedBox(height: 20),
-
-        // Video info
-        if (downloadState.videoTitle != null)
-          GlassContainer(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Container(
-                  width: 60, height: 60,
-                  decoration: BoxDecoration(gradient: ThemeConstants.primaryGradient, borderRadius: BorderRadius.circular(8)),
-                  child: const Icon(Icons.music_video_rounded, color: Colors.white, size: 32),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(downloadState.videoTitle!, style: Theme.of(context).textTheme.titleSmall, maxLines: 2, overflow: TextOverflow.ellipsis),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          if (downloadState.videoAuthor != null) ...[
-                            Icon(Icons.person, size: 14, color: ThemeConstants.textSecondary),
-                            const SizedBox(width: 4),
-                            Flexible(child: Text(downloadState.videoAuthor!, style: TextStyle(color: ThemeConstants.textSecondary, fontSize: 12), overflow: TextOverflow.ellipsis)),
-                          ],
-                          if (downloadState.videoDuration != null) ...[
-                            const SizedBox(width: 12),
-                            Icon(Icons.timer, size: 14, color: ThemeConstants.textSecondary),
-                            const SizedBox(width: 4),
-                            Text(_formatDuration(downloadState.videoDuration), style: TextStyle(color: ThemeConstants.textSecondary, fontSize: 12)),
-                          ],
-                        ],
-                      ),
-                    ],
+          child: Row(
+            children: [
+              Icon(Icons.link_rounded, color: ThemeConstants.textMuted, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _urlController,
+                  decoration: const InputDecoration(
+                    hintText: 'https://youtube.com/watch?v...',
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: 12),
                   ),
+                  style: const TextStyle(fontSize: 14),
                 ),
-              ],
-            ),
-          ),
-
-        const SizedBox(height: 20),
-
-        // Output directory
-        GlassContainer(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text('Save Location', style: Theme.of(context).textTheme.titleMedium),
-                  const Spacer(),
-                  TextButton.icon(onPressed: _selectFolder, icon: const Icon(Icons.folder_open, size: 18), label: const Text('Change')),
-                ],
               ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: ThemeConstants.cardColor, borderRadius: BorderRadius.circular(8)),
-                child: Row(
-                  children: [
-                    const Icon(Icons.folder, size: 20, color: Colors.amber),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(_outputDirectory ?? 'Not set', style: TextStyle(color: ThemeConstants.textSecondary, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis)),
-                  ],
+              // FETCH INFO button
+              TextButton(
+                onPressed: downloadState.status == DownloadStatus.fetching || downloadState.status == DownloadStatus.downloading
+                    ? null
+                    : _fetchVideoInfo,
+                child: Text(
+                  downloadState.status == DownloadStatus.fetching ? 'FETCHING...' : 'FETCH INFO',
+                  style: TextStyle(
+                    color: ThemeConstants.primaryColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ],
@@ -506,86 +530,516 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
 
         const SizedBox(height: 16),
 
-        // Debug info
-        if (downloadState.debugInfo != null)
+        // Download Format Toggle
+        _buildSectionLabel('DOWNLOAD FORMAT'),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: ThemeConstants.cardColor,
+            borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => ref.read(downloadFormatProvider.notifier).state = DownloadFormat.audio,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: downloadFormat == DownloadFormat.audio 
+                          ? ThemeConstants.primaryColor 
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(ThemeConstants.radiusSmall),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.audiotrack_rounded,
+                          size: 18,
+                          color: downloadFormat == DownloadFormat.audio 
+                              ? Colors.white 
+                              : ThemeConstants.textMuted,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Audio Only',
+                          style: TextStyle(
+                            color: downloadFormat == DownloadFormat.audio 
+                                ? Colors.white 
+                                : ThemeConstants.textMuted,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => ref.read(downloadFormatProvider.notifier).state = DownloadFormat.video,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: downloadFormat == DownloadFormat.video 
+                          ? ThemeConstants.primaryColor 
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(ThemeConstants.radiusSmall),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.videocam_rounded,
+                          size: 18,
+                          color: downloadFormat == DownloadFormat.video 
+                              ? Colors.white 
+                              : ThemeConstants.textMuted,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Video',
+                          style: TextStyle(
+                            color: downloadFormat == DownloadFormat.video 
+                                ? Colors.white 
+                                : ThemeConstants.textMuted,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // SAVE LOCATION Section
+        _buildSectionLabel('SAVE LOCATION'),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: ThemeConstants.cardColor,
+            borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+            border: Border.all(color: ThemeConstants.glassBorderColor),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.folder_rounded, color: ThemeConstants.primaryColor, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _outputDirectory?.split('/').last ?? '/Music/YouTube',
+                  style: const TextStyle(
+                    color: ThemeConstants.textPrimary,
+                    fontSize: 14,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              TextButton(
+                onPressed: _selectFolder,
+                child: Text(
+                  'CHANGE',
+                  style: TextStyle(
+                    color: ThemeConstants.primaryColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Detected Tracks Section
+        if (downloadState.videoTitle != null) ...[
+          Row(
+            children: [
+              const Text(
+                'Detected Tracks',
+                style: TextStyle(
+                  color: ThemeConstants.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: ThemeConstants.cardColorLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  '1 ITEM',
+                  style: TextStyle(
+                    color: ThemeConstants.textSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () => ref.read(downloadStateProvider.notifier).reset(),
+                child: Text(
+                  'Clear All',
+                  style: TextStyle(color: ThemeConstants.textMuted, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildTrackCard(downloadState, ref, downloadFormat),
+        ],
+
+        // Error message
+        if (downloadState.status == DownloadStatus.error)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(downloadState.debugInfo!, style: TextStyle(color: ThemeConstants.textMuted, fontSize: 12), textAlign: TextAlign.center),
+            padding: const EdgeInsets.only(top: 16),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: ThemeConstants.errorColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_rounded, color: ThemeConstants.errorColor),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      downloadState.errorMessage ?? 'Unknown error',
+                      style: TextStyle(color: ThemeConstants.errorColor, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
 
-        // Download progress
-        if (downloadState.status == DownloadStatus.downloading)
-          GlassContainer(
-            padding: const EdgeInsets.all(20),
+        // Success message
+        if (downloadState.status == DownloadStatus.complete)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: ThemeConstants.successColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.check_circle_rounded, color: ThemeConstants.successColor),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Download Complete!',
+                          style: TextStyle(color: ThemeConstants.successColor, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () {
+                      ref.read(downloadStateProvider.notifier).reset();
+                      ref.read(libraryProvider.notifier).quickRescan();
+                      ref.invalidate(recentDownloadsProvider);
+                      _urlController.clear();
+                    },
+                    child: const Text('Download Another'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+        const SizedBox(height: 24),
+        
+        // Recent Downloads Section
+        _buildRecentDownloadsSection(context, ref, recentDownloads),
+
+        const SizedBox(height: 40),
+
+        // Audio quality indicator
+        Center(
+          child: Text(
+            downloadFormat == DownloadFormat.audio 
+                ? 'HIGH QUALITY AUDIO EXTRACTION (320KBPS)'
+                : 'HIGH QUALITY VIDEO DOWNLOAD',
+            style: TextStyle(
+              color: ThemeConstants.textMuted,
+              fontSize: 10,
+              letterSpacing: 1,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecentDownloadsSection(BuildContext context, WidgetRef ref, AsyncValue recentDownloads) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Recently Downloaded',
+              style: TextStyle(
+                color: ThemeConstants.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                ref.read(libraryProvider.notifier).quickRescan();
+                ref.invalidate(recentDownloadsProvider);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Refreshing...')),
+                );
+              },
+              child: Text(
+                'Refresh',
+                style: TextStyle(color: ThemeConstants.primaryColor, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        recentDownloads.when(
+          data: (songs) {
+            if (songs.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: ThemeConstants.cardColor,
+                  borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+                ),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.download_rounded, size: 32, color: ThemeConstants.textMuted),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No downloads yet',
+                        style: TextStyle(color: ThemeConstants.textMuted, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            return Column(
+              children: songs.take(5).toList().asMap().entries.map<Widget>((entry) {
+                final index = entry.key;
+                final song = entry.value;
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: ThemeConstants.cardColor,
+                    borderRadius: BorderRadius.circular(ThemeConstants.radiusSmall),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          gradient: ThemeConstants.tealGradient,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.music_note_rounded,
+                          color: Colors.white.withValues(alpha: 0.7),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              song.title,
+                              style: const TextStyle(
+                                color: ThemeConstants.textPrimary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              song.artist,
+                              style: TextStyle(
+                                color: ThemeConstants.textMuted,
+                                fontSize: 11,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          ref.read(miniPlayerDismissedProvider.notifier).state = false;
+                          ref.read(playerStateProvider.notifier).playSong(song, queue: songs.cast());
+                        },
+                        icon: Icon(Icons.play_circle_filled_rounded, color: ThemeConstants.primaryColor),
+                        iconSize: 32,
+                      ),
+                    ],
+                  ),
+                ).animate(delay: Duration(milliseconds: (50 * index).toInt()))
+                    .fadeIn()
+                    .slideX(begin: 0.1, end: 0);
+              }).toList(),
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, __) => Text('Error loading downloads', style: TextStyle(color: ThemeConstants.errorColor)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionLabel(String label) {
+    return Text(
+      label,
+      style: TextStyle(
+        color: ThemeConstants.primaryColor,
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+
+  Widget _buildTrackCard(DownloadState downloadState, WidgetRef ref, DownloadFormat format) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: ThemeConstants.cardColor,
+        borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+      ),
+      child: Row(
+        children: [
+          // Album art placeholder
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: ThemeConstants.tealGradient,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              format == DownloadFormat.audio ? Icons.audiotrack_rounded : Icons.videocam_rounded,
+              color: Colors.white.withValues(alpha: 0.7),
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Track info
+          Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  downloadState.videoTitle ?? 'Unknown',
+                  style: const TextStyle(
+                    color: ThemeConstants.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Downloading...'),
-                    Text('${(downloadState.progress * 100).toStringAsFixed(0)}%', style: TextStyle(color: ThemeConstants.primaryColor, fontWeight: FontWeight.bold)),
+                    Icon(Icons.person_rounded, size: 12, color: ThemeConstants.textMuted),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        downloadState.videoAuthor ?? 'Unknown',
+                        style: TextStyle(color: ThemeConstants.textMuted, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '• ${_formatDuration(downloadState.videoDuration)}',
+                      style: TextStyle(color: ThemeConstants.textMuted, fontSize: 12),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: downloadState.progress, minHeight: 8)),
               ],
             ),
           ),
-
-        // Success
-        if (downloadState.status == DownloadStatus.complete)
-          GlassContainer(
-            padding: const EdgeInsets.all(20),
-            backgroundColor: ThemeConstants.successColor.withValues(alpha: 0.1),
-            child: Column(
-              children: [
-                Icon(Icons.check_circle_rounded, color: ThemeConstants.successColor, size: 48),
-                const SizedBox(height: 12),
-                Text('Download Complete!', style: TextStyle(color: ThemeConstants.successColor, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text(downloadState.outputPath ?? '', style: TextStyle(color: ThemeConstants.textSecondary, fontSize: 10), textAlign: TextAlign.center, maxLines: 2),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    ref.read(downloadStateProvider.notifier).reset();
-                    ref.read(libraryProvider.notifier).quickRescan();
-                    _urlController.clear();
-                  },
-                  child: const Text('Download Another'),
-                ),
-              ],
+          // Download button or progress
+          if (downloadState.status == DownloadStatus.downloading)
+            SizedBox(
+              width: 48,
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      value: downloadState.progress,
+                      strokeWidth: 2,
+                      color: ThemeConstants.primaryColor,
+                      backgroundColor: ThemeConstants.cardColorLight,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${(downloadState.progress * 100).toInt()}%',
+                    style: TextStyle(
+                      color: ThemeConstants.primaryColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (downloadState.status == DownloadStatus.complete)
+            Icon(Icons.check_circle_rounded, color: ThemeConstants.successColor, size: 32)
+          else
+            IconButton(
+              onPressed: downloadState.status == DownloadStatus.idle ? _startDownload : null,
+              icon: Icon(
+                Icons.download_rounded,
+                color: downloadState.status == DownloadStatus.idle
+                    ? ThemeConstants.primaryColor
+                    : ThemeConstants.textMuted,
+              ),
+              iconSize: 28,
             ),
-          ),
-
-        // Error
-        if (downloadState.status == DownloadStatus.error)
-          GlassContainer(
-            padding: const EdgeInsets.all(20),
-            backgroundColor: ThemeConstants.errorColor.withValues(alpha: 0.1),
-            child: Column(
-              children: [
-                Icon(Icons.error_rounded, color: ThemeConstants.errorColor, size: 48),
-                const SizedBox(height: 12),
-                Text('Error', style: TextStyle(color: ThemeConstants.errorColor, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text(downloadState.errorMessage ?? 'Unknown error', style: TextStyle(color: ThemeConstants.textSecondary, fontSize: 12), textAlign: TextAlign.center),
-                const SizedBox(height: 16),
-                OutlinedButton(onPressed: () => ref.read(downloadStateProvider.notifier).reset(), child: const Text('Try Again')),
-              ],
-            ),
-          ),
-
-        const SizedBox(height: 20),
-
-        // Download button
-        if (downloadState.videoTitle != null && downloadState.status == DownloadStatus.idle)
-          ElevatedButton.icon(
-            onPressed: _startDownload,
-            icon: const Icon(Icons.download_rounded),
-            label: const Text('Download Audio'),
-            style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-          ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -601,6 +1055,7 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a folder')));
       return;
     }
-    ref.read(downloadStateProvider.notifier).downloadAudio(_outputDirectory!);
+    final format = ref.read(downloadFormatProvider);
+    ref.read(downloadStateProvider.notifier).download(_outputDirectory!, format);
   }
 }

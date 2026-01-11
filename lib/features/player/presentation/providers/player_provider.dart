@@ -167,3 +167,11 @@ final playerStateProvider =
   final database = ref.watch(databaseProvider);
   return PlayerStateNotifier(audioHandler, database);
 });
+
+/// Global mini player dismiss state - shared across all screens
+final miniPlayerDismissedProvider = StateProvider<bool>((ref) => false);
+
+/// Favorite status provider for current song - triggers UI updates when favorite changes
+final currentSongFavoriteProvider = StateProvider<bool>((ref) => false);
+
+
