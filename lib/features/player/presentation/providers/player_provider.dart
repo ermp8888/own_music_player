@@ -173,5 +173,3 @@ final miniPlayerDismissedProvider = StateProvider<bool>((ref) => false);
 
 /// Favorite status provider for current song - triggers UI updates when favorite changes
 final currentSongFavoriteProvider = StateProvider<bool>((ref) => false);
-
-

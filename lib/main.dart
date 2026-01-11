@@ -22,7 +22,7 @@ Future<void> main() async {
   // Initialize database
   final database = AppDatabase();
 
-  // Try to initialize audio handler
+  // Initialize audio handler (required before app starts for player to work)
   MyAudioHandler? audioHandler;
   try {
     audioHandler = await AudioService.init(

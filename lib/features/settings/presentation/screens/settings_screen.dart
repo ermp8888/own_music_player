@@ -179,82 +179,36 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _shareApp(BuildContext context) async {
-    // Try multiple approaches to share the APK
-    
-    // Approach 1: Check if we have the APK in Downloads folder
-    final downloadApkPath = '/storage/emulated/0/Download/DownTune.apk';
-    if (await File(downloadApkPath).exists()) {
-      await Share.shareXFiles(
-        [XFile(downloadApkPath)],
-        text: '📱 DownTune - Music Player App\n\nInstall this APK to enjoy offline music!',
-        subject: 'DownTune App',
-      );
-      return;
-    }
-    
-    // Approach 2: Try to access the app's own APK via data directory
-    // On Android, the installed APK is at /data/app/[package]/base.apk
-    final possibleApkPaths = [
-      '/data/app/com.example.my_music_app-1/base.apk',
-      '/data/app/com.example.my_music_app-2/base.apk',
-      '/data/app/~~random/com.example.my_music_app/base.apk',
-    ];
-    
-    for (final path in possibleApkPaths) {
-      try {
-        final apkFile = File(path);
-        if (await apkFile.exists()) {
-          // Copy to cache for sharing (we can't share directly from /data/app)
-          final cacheDir = await getTemporaryDirectory();
-          final sharePath = '${cacheDir.path}/DownTune.apk';
-          await apkFile.copy(sharePath);
-          
-          await Share.shareXFiles(
-            [XFile(sharePath)],
-            text: '📱 DownTune - Music Player App\n\nInstall this APK to enjoy offline music!',
-            subject: 'DownTune App',
-          );
-          return;
-        }
-      } catch (e) {
-        // Continue to next path
-      }
-    }
-    
-    // Approach 3: Copy APK from app's own directory to Downloads and share
     try {
-      final appDir = await getApplicationDocumentsDirectory();
-      final parentDir = appDir.parent.parent.parent.parent;
-      // Try to find base.apk in the app's installation directory
-      final apkPath = '${parentDir.path}/base.apk';
-      final apkFile = File(apkPath);
+      // Check if APK exists in Downloads folder
+      final downloadApkPath = '/storage/emulated/0/Download/DownTune.apk';
+      final downloadFile = File(downloadApkPath);
       
-      if (await apkFile.exists()) {
-        final sharePath = '/storage/emulated/0/Download/DownTune.apk';
-        await apkFile.copy(sharePath);
-        
+      if (await downloadFile.exists()) {
+        // Share directly from Downloads folder
         await Share.shareXFiles(
-          [XFile(sharePath)],
+          [XFile(downloadApkPath)],
           text: '📱 DownTune - Music Player App\n\nInstall this APK to enjoy offline music!',
           subject: 'DownTune App',
         );
         return;
       }
-    } catch (e) {
-      // Continue to fallback
-    }
-    
-    // Final fallback - create the APK in Downloads for manual sharing
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('To share the app, please copy the APK to Downloads folder'),
-        action: SnackBarAction(
-          label: 'OK',
-          onPressed: () {},
+      
+      // If APK doesn't exist in Downloads, prompt user
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('APK file not found. Please copy DownTune.apk to Downloads folder.'),
+          duration: Duration(seconds: 3),
         ),
-        duration: const Duration(seconds: 4),
-      ),
-    );
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   void _showLocationPicker(BuildContext context, WidgetRef ref) {
