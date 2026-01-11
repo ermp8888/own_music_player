@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/services/share_service.dart';
 import '../../../../shared/widgets/gradient_background.dart';
 import '../../../player/presentation/providers/player_provider.dart';
 import '../../../player/presentation/widgets/mini_player.dart';
@@ -389,6 +390,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 Navigator.pop(context);
                 ref.read(databaseProvider).toggleFavorite(song.id);
                 ref.read(libraryProvider.notifier).loadLibrary();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.share_rounded),
+              title: const Text('Share'),
+              onTap: () {
+                Navigator.pop(context);
+                ShareService.shareSong(song);
               },
             ),
           ],

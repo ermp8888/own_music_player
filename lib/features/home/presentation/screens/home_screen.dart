@@ -13,6 +13,7 @@ import '../../../playlists/presentation/screens/playlists_screen.dart';
 import '../../../playlists/presentation/screens/liked_songs_screen.dart';
 import '../../../youtube_import/presentation/screens/youtube_import_screen.dart';
 import '../../../youtube_import/presentation/screens/downloads_screen.dart';
+import '../../../settings/presentation/screens/settings_screen.dart';
 import '../../../../main.dart' show sharedUrlProvider;
 
 /// Provider for YouTube imported songs (songs without local file or with specific source)
@@ -199,12 +200,6 @@ class _HomeContent extends ConsumerWidget {
               );
             },
             icon: const Icon(Icons.search_rounded),
-            color: ThemeConstants.textPrimary,
-          ),
-          // Notification icon
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.notifications_outlined),
             color: ThemeConstants.textPrimary,
           ),
         ],
@@ -616,37 +611,10 @@ class _ExplorePage extends StatelessWidget {
   }
 }
 
-/// Settings page placeholder
+/// Settings page - delegates to SettingsScreen
 class _SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.settings_rounded,
-            size: 64,
-            color: ThemeConstants.textMuted,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Settings',
-            style: TextStyle(
-              color: ThemeConstants.textSecondary,
-              fontSize: 18,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Coming Soon',
-            style: TextStyle(
-              color: ThemeConstants.textMuted,
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
+    return const SettingsScreen();
   }
 }

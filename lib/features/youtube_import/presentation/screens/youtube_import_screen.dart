@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/providers/download_location_provider.dart';
 import '../../../../shared/widgets/gradient_background.dart';
 import '../../../../shared/widgets/glass_container.dart';
 import '../../../local_music/presentation/providers/library_provider.dart';
@@ -354,7 +355,15 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
   }
 
   Future<void> _initOutputDirectory() async {
-    _outputDirectory = '/storage/emulated/0/Download/MyMusicApp';
+    // Use the download location from settings
+    final locationNotifier = ref.read(downloadLocationProvider.notifier);
+    _outputDirectory = ref.read(downloadLocationProvider);
+    
+    // If empty, initialize with default
+    if (_outputDirectory == null || _outputDirectory!.isEmpty) {
+      _outputDirectory = await DownloadLocationNotifier.getDefaultDownloadPath();
+      await locationNotifier.setLocation(_outputDirectory!);
+    }
     
     try {
       final dir = Directory(_outputDirectory!);
@@ -439,9 +448,7 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
                   ? const Center(child: CircularProgressIndicator())
                   : SingleChildScrollView(
                       padding: const EdgeInsets.all(20),
-                      child: !disclaimerAccepted
-                          ? _buildDisclaimerView(context, ref)
-                          : _buildDownloadView(context, ref, downloadState, downloadFormat, recentDownloads),
+                      child: _buildDownloadView(context, ref, downloadState, downloadFormat, recentDownloads),
                     ),
             ),
             const MiniPlayer(),

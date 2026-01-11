@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/services/share_service.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../local_music/presentation/providers/library_provider.dart';
 import '../providers/player_provider.dart';
@@ -77,9 +78,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
-                          onPressed: () {
-                            // TODO: More options
-                          },
+                          onPressed: () => _showSongOptions(context, song),
                           icon: const Icon(Icons.more_horiz_rounded),
                           iconSize: 24,
                           color: ThemeConstants.textPrimary,
@@ -433,9 +432,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       ),
                       // Share icon
                       IconButton(
-                        onPressed: () {
-                          // TODO: Share
-                        },
+                        onPressed: () => ShareService.shareSong(song),
                         icon: const Icon(
                           Icons.share_rounded,
                           color: ThemeConstants.textMuted,
@@ -452,6 +449,45 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           },
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (_, __) => const Center(child: Text('Error loading player')),
+        ),
+      ),
+    );
+  }
+
+  void _showSongOptions(BuildContext context, dynamic song) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.share_rounded),
+              title: const Text('Share Song'),
+              onTap: () {
+                Navigator.pop(context);
+                ShareService.shareSong(song);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.share_outlined),
+              title: const Text('Share Now Playing'),
+              subtitle: const Text('Share what you\'re listening to'),
+              onTap: () {
+                Navigator.pop(context);
+                ShareService.shareSongInfo(song);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.playlist_add_rounded),
+              title: const Text('Add to Playlist'),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Show playlist picker
+              },
+            ),
+          ],
         ),
       ),
     );

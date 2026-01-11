@@ -52,6 +52,12 @@ dependencies:
   # Drag & Drop
   reorderable_grid_view: ^2.2.8
 
+  # Sharing
+  share_plus: ^10.1.4
+
+  # Storage
+  shared_preferences: ^2.3.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
