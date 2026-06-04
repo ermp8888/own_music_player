@@ -14,6 +14,7 @@ import '../../../playlists/presentation/screens/liked_songs_screen.dart';
 import '../../../youtube_import/presentation/screens/youtube_import_screen.dart';
 import '../../../youtube_import/presentation/screens/downloads_screen.dart';
 import '../../../settings/presentation/screens/settings_screen.dart';
+import '../../../online_music/presentation/screens/online_music_screen.dart';
 import '../../../../main.dart' show sharedUrlProvider;
 
 /// Provider for YouTube imported songs (songs without local file or with specific source)
@@ -107,7 +108,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       case 0:
         return _HomeContent();
       case 1:
-        return _ExplorePage();
+        return const OnlineMusicScreen();
       case 3:
         return _SettingsPage();
       default:
@@ -577,39 +578,7 @@ class _HomeContent extends ConsumerWidget {
 }
 
 /// Explore page placeholder
-class _ExplorePage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.explore_rounded,
-            size: 64,
-            color: ThemeConstants.textMuted,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Explore',
-            style: TextStyle(
-              color: ThemeConstants.textSecondary,
-              fontSize: 18,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Coming Soon',
-            style: TextStyle(
-              color: ThemeConstants.textMuted,
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+
 
 /// Settings page - delegates to SettingsScreen
 class _SettingsPage extends StatelessWidget {

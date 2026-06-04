@@ -8,6 +8,23 @@ A full-featured, cross-platform music player application built with Flutter for 
 
 ## Features
 
+### 🌐 Online Music Streaming
+- Search and stream Bollywood/regional songs online
+- Dynamic search queries and quick vibe tags (e.g., Party, Romantic, Devotional, Lo-Fi)
+- High-quality 320kbps audio streams powered by the JioSaavn API client repository
+
+### ⬇️ Online Music Downloads
+- Download streaming online tracks locally to your device
+- **Interactive Location Selection**: Save to the default folder or choose any custom directory via the system file/folder picker on the fly
+- Chunk-based progressive download tracking with clear UI SnackBar updates (Percentage progress, completed success, or error alerts)
+- Automatic local DB indexing for immediate offline play inside local downloads
+
+### 📋 Playlist Management
+- Create, rename, delete, and manage custom playlists
+- Drag-and-drop song reordering
+- Smart playlists (Recently Played, Most Played)
+- **Hybrid Playlists**: Add both local songs and online streaming tracks to the same custom playlist (stores online track refs in database dynamically)
+
 ### 🎵 Local Music Library
 - Scan and index music files from device storage
 - Support for MP3, M4A, WAV, FLAC, AAC, OGG, WMA, OPUS formats
@@ -21,19 +38,13 @@ A full-featured, cross-platform music player application built with Flutter for 
 - Seek bar with progress tracking
 - Visual animated rings during playback
 
-### 📋 Playlist Management
-- Create, rename, and delete playlists
-- Drag-and-drop song reordering
-- Smart playlists (Recently Played, Most Played)
-- Add/remove songs from playlists
-
 ### ⬇️ YouTube Import
 - Download audio from YouTube URLs
 - Educational use disclaimer
 - Progress tracking
 - Custom save location
 
-### 🎨 Premium Dark UI
+### 🎨 Premium Dark UI & Music Vibe
 - Material 3 design system
 - Glassmorphism effects
 - Smooth animations and transitions

@@ -57,6 +57,7 @@ dependencies:
 
   # Storage
   shared_preferences: ^2.3.5
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:

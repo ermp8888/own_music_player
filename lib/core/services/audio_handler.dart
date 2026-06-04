@@ -51,7 +51,11 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
       artist: song.artist,
       album: song.album,
       duration: Duration(milliseconds: song.duration),
-      artUri: song.albumArtPath != null ? Uri.file(song.albumArtPath!) : null,
+      artUri: song.albumArtPath != null
+          ? (song.albumArtPath!.startsWith('http')
+              ? Uri.parse(song.albumArtPath!)
+              : Uri.file(song.albumArtPath!))
+          : null,
     );
     mediaItem.add(item);
   }
@@ -92,7 +96,13 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
     await _playlist.clear();
     await _playlist.addAll(
-      songs.map((song) => AudioSource.file(song.filePath)).toList(),
+      songs.map((song) {
+        if (song.filePath.startsWith('http://') || song.filePath.startsWith('https://')) {
+          return AudioSource.uri(Uri.parse(song.filePath));
+        } else {
+          return AudioSource.file(song.filePath);
+        }
+      }).toList(),
     );
 
     // Update queue
@@ -103,8 +113,11 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
               artist: song.artist,
               album: song.album,
               duration: Duration(milliseconds: song.duration),
-              artUri:
-                  song.albumArtPath != null ? Uri.file(song.albumArtPath!) : null,
+              artUri: song.albumArtPath != null
+                  ? (song.albumArtPath!.startsWith('http')
+                      ? Uri.parse(song.albumArtPath!)
+                      : Uri.file(song.albumArtPath!))
+                  : null,
             ))
         .toList());
 

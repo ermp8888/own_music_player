@@ -43,3 +43,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Temporary test/swagger dumps
+test_modules.json
+test_search.json
+test_swagger.json
+.metadata

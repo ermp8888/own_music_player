@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -18,6 +19,47 @@ class PlayerScreen extends ConsumerStatefulWidget {
 
 class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   bool? _isFavorite;
+
+  Widget _buildPlaceholderArt() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Abstract wave pattern placeholder
+        Positioned(
+          right: 20,
+          top: 30,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                'MODERN',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+              Text(
+                'MUSIC',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Icon(
+          Icons.music_note_rounded,
+          color: Colors.white.withValues(alpha: 0.3),
+          size: 80,
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,44 +153,19 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(ThemeConstants.radiusLarge),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Abstract wave pattern placeholder
-                              Positioned(
-                                right: 20,
-                                top: 30,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      'MODERN',
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.5),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 2,
-                                      ),
-                                    ),
-                                    Text(
-                                      'MUSIC',
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.5),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 2,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(
-                                Icons.music_note_rounded,
-                                color: Colors.white.withValues(alpha: 0.3),
-                                size: 80,
-                              ),
-                            ],
-                          ),
+                          child: song.albumArtPath != null && song.albumArtPath!.isNotEmpty
+                              ? (song.albumArtPath!.startsWith('http')
+                                  ? Image.network(
+                                      song.albumArtPath!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => _buildPlaceholderArt(),
+                                    )
+                                  : Image.file(
+                                      File(song.albumArtPath!),
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => _buildPlaceholderArt(),
+                                    ))
+                              : _buildPlaceholderArt(),
                         ),
                       ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
                     ),

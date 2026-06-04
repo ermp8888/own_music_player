@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/theme_constants.dart';
@@ -135,17 +136,39 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                     child: Row(
                       children: [
                         // Album art
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            gradient: ThemeConstants.tealGradient,
-                          ),
-                          child: const Icon(
-                            Icons.music_note_rounded,
-                            color: Colors.white,
-                            size: 22,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              gradient: ThemeConstants.tealGradient,
+                            ),
+                            child: song.albumArtPath != null && song.albumArtPath!.isNotEmpty
+                                ? (song.albumArtPath!.startsWith('http')
+                                    ? Image.network(
+                                        song.albumArtPath!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) => const Icon(
+                                          Icons.music_note_rounded,
+                                          color: Colors.white,
+                                          size: 22,
+                                        ),
+                                      )
+                                    : Image.file(
+                                        File(song.albumArtPath!),
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) => const Icon(
+                                          Icons.music_note_rounded,
+                                          color: Colors.white,
+                                          size: 22,
+                                        ),
+                                      ))
+                                : const Icon(
+                                    Icons.music_note_rounded,
+                                    color: Colors.white,
+                                    size: 22,
+                                  ),
                           ),
                         ),
                         const SizedBox(width: 12),
