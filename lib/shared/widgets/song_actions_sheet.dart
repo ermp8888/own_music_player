@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/theme_constants.dart';
@@ -109,15 +108,17 @@ class _SongActionsSheet extends ConsumerWidget {
             _ActionTile(
               icon: Icons.queue_music_rounded,
               label: 'Play Next',
-              onTap: () {
-                // TODO: Implement play next in queue
+              onTap: () async {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('"${song.title}" will play next'),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
+                await ref.read(playerStateProvider.notifier).playNext(song);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('"${song.title}" will play next'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
               },
             ),
 

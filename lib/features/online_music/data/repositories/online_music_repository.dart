@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/database/app_database.dart';
+import '../../../../core/utils/metadata_cleaner.dart';
 
 final onlineMusicRepositoryProvider = Provider<OnlineMusicRepository>((ref) {
   return OnlineMusicRepository();
@@ -93,9 +94,9 @@ class OnlineMusicRepository {
       return Song(
         id: generateOnlineSongId(saavnId),
         filePath: streamUrl,
-        title: title,
-        artist: artistName,
-        album: albumName,
+        title: cleanSongTitle(title),
+        artist: cleanArtist(artistName),
+        album: cleanSongTitle(albumName),
         duration: durationMs,
         fileSize: 0,
         albumArtPath: imageUrl,

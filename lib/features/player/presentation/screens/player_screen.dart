@@ -69,6 +69,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     final isPlaying = ref.watch(isPlayingProvider);
     final positionData = ref.watch(positionDataProvider);
     final playerState = ref.watch(playerStateProvider);
+    final timerState = ref.watch(sleepTimerProvider);
 
     return Scaffold(
       backgroundColor: ThemeConstants.backgroundColor,
@@ -452,9 +453,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       // Sleep Timer icon
                       IconButton(
                         onPressed: () => showSleepTimerSheet(context, ref),
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.timer_rounded,
-                          color: ThemeConstants.textMuted,
+                          color: timerState.isActive
+                              ? ThemeConstants.primaryColor
+                              : ThemeConstants.textMuted,
                         ),
                         iconSize: 24,
                       ),

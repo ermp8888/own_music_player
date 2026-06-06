@@ -25,7 +25,12 @@ class GeminiApiKeyNotifier extends StateNotifier<String> {
       if (mounted) state = savedKey;
     } else {
       // Fall back to .env file
-      final envKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+      String envKey = '';
+      try {
+        envKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+      } catch (_) {
+        // dotenv is not initialized, ignore
+      }
       if (envKey.isNotEmpty && mounted) {
         state = envKey;
       }

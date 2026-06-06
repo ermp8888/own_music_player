@@ -5,7 +5,7 @@ import '../../../../core/constants/theme_constants.dart';
 import '../../../../shared/widgets/gradient_background.dart';
 import '../../../../shared/widgets/glass_container.dart';
 import '../../../../shared/animations/scale_tap_animation.dart';
-import '../../../player/presentation/providers/player_provider.dart';
+
 import '../../../player/presentation/widgets/mini_player.dart';
 import '../providers/playlist_provider.dart';
 import 'playlist_detail_screen.dart';

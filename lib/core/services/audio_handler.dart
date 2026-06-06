@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
@@ -6,7 +7,8 @@ import '../database/app_database.dart';
 
 /// Background audio handler for media controls integration
 class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
-  final AudioPlayer _player = AudioPlayer();
+  late final AudioPlayer _player;
+  late final AndroidEqualizer? _equalizer;
   final AppDatabase _database;
 
   final _playlist = ConcatenatingAudioSource(children: []);
@@ -14,6 +16,17 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   int _currentIndex = -1;
 
   MyAudioHandler(this._database) {
+    if (Platform.isAndroid) {
+      _equalizer = AndroidEqualizer();
+      _player = AudioPlayer(
+        audioPipeline: AudioPipeline(
+          androidAudioEffects: [_equalizer!],
+        ),
+      );
+    } else {
+      _equalizer = null;
+      _player = AudioPlayer();
+    }
     _init();
   }
 
@@ -133,6 +146,53 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     await play();
   }
 
+  /// Insert a song to play next in the queue
+  Future<void> playNext(Song song) async {
+    // If the queue is empty, just play it
+    if (_songs.isEmpty) {
+      await loadPlaylist([song], startIndex: 0);
+      return;
+    }
+
+    final insertIndex = _currentIndex + 1;
+    
+    // Check if the song is already the next song to avoid duplicate insertion if tapped multiple times
+    if (insertIndex < _songs.length && _songs[insertIndex].id == song.id) {
+      return;
+    }
+
+    // Insert into local song list
+    _songs.insert(insertIndex, song);
+
+    // Create AudioSource
+    final AudioSource source;
+    if (song.filePath.startsWith('http://') || song.filePath.startsWith('https://')) {
+      source = AudioSource.uri(Uri.parse(song.filePath));
+    } else {
+      source = AudioSource.file(song.filePath);
+    }
+
+    // Insert into player playlist
+    await _playlist.insert(insertIndex, source);
+
+    // Update queue list
+    final newQueue = _songs
+        .map((s) => MediaItem(
+              id: s.id.toString(),
+              title: s.title,
+              artist: s.artist,
+              album: s.album,
+              duration: Duration(milliseconds: s.duration),
+              artUri: s.albumArtPath != null
+                  ? (s.albumArtPath!.startsWith('http')
+                      ? Uri.parse(s.albumArtPath!)
+                      : Uri.file(s.albumArtPath!))
+                  : null,
+            ))
+        .toList();
+    queue.add(newQueue);
+  }
+
   @override
   Future<void> play() => _player.play();
 
@@ -233,6 +293,27 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
 
   /// Set volume
   Future<void> setVolume(double volume) => _player.setVolume(volume);
+
+  /// Enable or disable the Android Equalizer effect
+  Future<void> setEqualizerEnabled(bool enabled) async {
+    if (_equalizer != null) {
+      await _equalizer!.setEnabled(enabled);
+    }
+  }
+
+  /// Set the gain of a specific Android Equalizer frequency band
+  Future<void> setEqualizerBandGain(int index, double gain) async {
+    if (_equalizer != null) {
+      try {
+        final params = await _equalizer!.parameters;
+        if (params.bands.length > index) {
+          await params.bands[index].setGain(gain);
+        }
+      } catch (e) {
+        // Handle or ignore if not initialized
+      }
+    }
+  }
 
   /// Clean up
   Future<void> dispose() async {

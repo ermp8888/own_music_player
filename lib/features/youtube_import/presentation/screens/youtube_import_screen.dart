@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/providers/download_location_provider.dart';
@@ -15,7 +15,7 @@ import '../../../../core/providers/filter_settings_provider.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/services/url_detector.dart';
 import 'package:drift/drift.dart' show Value;
-import '../../../../shared/widgets/gradient_background.dart';
+
 import '../../../../shared/widgets/glass_container.dart';
 import '../../../local_music/presentation/providers/library_provider.dart';
 import '../../../player/presentation/providers/player_provider.dart';
@@ -247,7 +247,7 @@ class DownloadStateNotifier extends StateNotifier<DownloadState> {
       // If all filters pass, classify mood/category using Gemini
       String mood = 'unknown';
       if (_geminiService != null) {
-        mood = await _geminiService!.classifyMood(result.title ?? 'Unknown', result.artist);
+        mood = await _geminiService.classifyMood(result.title ?? 'Unknown', result.artist);
       }
 
       // Save to database
@@ -395,7 +395,7 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final disclaimerAccepted = ref.watch(disclaimerAcceptedProvider);
+    final _ = ref.watch(disclaimerAcceptedProvider);
     final downloadState = ref.watch(downloadStateProvider);
     final downloadFormat = ref.watch(downloadFormatProvider);
     final recentDownloads = ref.watch(recentDownloadsProvider);

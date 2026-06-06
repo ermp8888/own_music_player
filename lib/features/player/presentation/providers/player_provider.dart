@@ -70,6 +70,15 @@ class PlayerStateNotifier extends StateNotifier<PlayerState> {
     );
   }
 
+  /// Insert a song to play next in the queue
+  Future<void> playNext(Song song) async {
+    await _audioHandler.playNext(song);
+    state = state.copyWith(
+      currentQueue: _audioHandler.songs,
+      currentIndex: _audioHandler.playbackState.value.queueIndex ?? state.currentIndex,
+    );
+  }
+
   /// Play/pause toggle
   Future<void> togglePlay() async {
     if (_audioHandler.playbackState.value.playing) {

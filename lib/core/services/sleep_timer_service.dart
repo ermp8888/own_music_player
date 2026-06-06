@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/app_constants.dart';
+import '../../features/player/presentation/providers/player_provider.dart';
 
 /// Sleep timer state
 class SleepTimerState {
@@ -111,7 +112,16 @@ class SleepTimerNotifier extends StateNotifier<SleepTimerState> {
 /// Provider for the sleep timer.
 final sleepTimerProvider =
     StateNotifierProvider<SleepTimerNotifier, SleepTimerState>((ref) {
-  return SleepTimerNotifier();
+  final audioHandler = ref.watch(audioHandlerProvider);
+  return SleepTimerNotifier(
+    onVolumeChange: (volume) async {
+      // just_audio volume control through the audio handler
+      await audioHandler.setVolume(volume);
+    },
+    onStop: () async {
+      await audioHandler.pause();
+    },
+  );
 });
 
 /// Available sleep timer durations.

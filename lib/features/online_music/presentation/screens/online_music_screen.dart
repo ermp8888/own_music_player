@@ -12,6 +12,7 @@ import '../../../../core/services/share_service.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:file_picker/file_picker.dart';
 import '../../../../core/providers/download_location_provider.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class OnlineMusicScreen extends ConsumerStatefulWidget {
   const OnlineMusicScreen({super.key});
@@ -23,6 +24,8 @@ class OnlineMusicScreen extends ConsumerStatefulWidget {
 class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  late stt.SpeechToText _speech;
+  bool _isListening = false;
 
   final List<Map<String, String>> _quickTags = [
     {'label': '🔥 Latest Hits', 'query': 'latest bollywood'},
@@ -36,6 +39,7 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
   @override
   void initState() {
     super.initState();
+    _speech = stt.SpeechToText();
     // Initialize controller text with the current provider query
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _searchController.text = ref.read(onlineMusicSearchQueryProvider);
@@ -58,6 +62,29 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
   void _onSearchSubmitted(String query) {
     if (query.trim().isNotEmpty) {
       ref.read(onlineMusicSearchQueryProvider.notifier).state = query;
+    }
+  }
+
+  void _listen() async {
+    if (!_isListening) {
+      bool available = await _speech.initialize(
+        onStatus: (val) => debugPrint('onStatus: $val'),
+        onError: (val) => debugPrint('onError: $val'),
+      );
+      if (available) {
+        setState(() => _isListening = true);
+        _speech.listen(
+          onResult: (val) => setState(() {
+            _searchController.text = val.recognizedWords;
+            if (val.recognizedWords.isNotEmpty) {
+              ref.read(onlineMusicSearchQueryProvider.notifier).state = val.recognizedWords;
+            }
+          }),
+        );
+      }
+    } else {
+      setState(() => _isListening = false);
+      _speech.stop();
     }
   }
 
@@ -159,15 +186,26 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
                     hintStyle: TextStyle(color: ThemeConstants.textMuted),
                     border: InputBorder.none,
                     icon: Icon(Icons.search_rounded, color: ThemeConstants.primaryColor),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: Icon(Icons.clear_rounded, color: ThemeConstants.textMuted),
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_searchController.text.isNotEmpty)
+                          IconButton(
+                            icon: const Icon(Icons.clear_rounded),
+                            color: ThemeConstants.textMuted,
                             onPressed: () {
                               _searchController.clear();
+                              ref.read(onlineMusicSearchQueryProvider.notifier).state = '';
                               setState(() {});
                             },
-                          )
-                        : null,
+                          ),
+                        IconButton(
+                          icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
+                          color: _isListening ? ThemeConstants.primaryColor : ThemeConstants.textMuted,
+                          onPressed: _listen,
+                        ),
+                      ],
+                    ),
                   ),
                   onChanged: (val) {
                     setState(() {});

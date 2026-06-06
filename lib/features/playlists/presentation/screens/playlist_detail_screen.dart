@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../shared/widgets/gradient_background.dart';
 import '../../../local_music/presentation/providers/library_provider.dart';

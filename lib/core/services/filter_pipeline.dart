@@ -34,15 +34,35 @@ class FilterPipeline {
   bool passQualityFilter(dynamic song, {FilterSettings settings = const FilterSettings()}) {
     if (song == null) return false;
 
+    int? bitrate;
+    int? duration;
+    int? fileSize;
+
+    if (song is Song) {
+      bitrate = song.bitrate;
+      duration = song.duration;
+      fileSize = song.fileSize;
+    } else if (song is Map) {
+      bitrate = song['bitrate'] as int?;
+      duration = song['duration'] as int?;
+      fileSize = song['fileSize'] as int?;
+    } else {
+      try {
+        bitrate = song.bitrate as int?;
+        duration = song.duration as int?;
+        fileSize = song.fileSize as int?;
+      } catch (_) {
+        return false;
+      }
+    }
+
     // Check bitrate (boundary: exactly 128 passes, null/0 fails gracefully)
-    final bitrate = song.bitrate;
     if (bitrate == null || bitrate < 128) {
       return false;
     }
 
     // Check duration in seconds (Drift uses milliseconds, so convert)
     // boundary: exactly 60s passes, 600s passes.
-    final duration = song.duration;
     if (duration == null) return false;
     
     final durationSeconds = duration / 1000.0;
@@ -63,7 +83,6 @@ class FilterPipeline {
 
     // Check file size (boundary: < 1 MB fails)
     // 1 MB = 1024 * 1024 bytes = 1048576 bytes
-    final fileSize = song.fileSize;
     if (fileSize == null || fileSize < 1024 * 1024) {
       return false;
     }
@@ -143,11 +162,27 @@ class FilterPipeline {
   // ──────────────────────────────────────────────────────────
 
   /// Returns true if the song title or artist matches any blacklist keyword.
+  /// Accepts a Song object or any object with title/artist String properties.
   bool isBlacklisted(dynamic song, {FilterSettings settings = const FilterSettings()}) {
     if (song == null) return false;
     
-    final title = (song.title as String? ?? '').toLowerCase();
-    final artist = (song.artist as String? ?? '').toLowerCase();
+    String title;
+    String artist;
+    
+    if (song is Song) {
+      title = song.title.toLowerCase();
+      artist = song.artist.toLowerCase();
+    } else if (song is Map) {
+      title = ((song['title'] as String?) ?? '').toLowerCase();
+      artist = ((song['artist'] as String?) ?? '').toLowerCase();
+    } else {
+      try {
+        title = (song.title as String? ?? '').toLowerCase();
+        artist = (song.artist as String? ?? '').toLowerCase();
+      } catch (_) {
+        return false;
+      }
+    }
 
     if (title.isEmpty) return false;
 

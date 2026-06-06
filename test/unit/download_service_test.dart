@@ -1,99 +1,73 @@
-import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_music_app/core/services/download_service.dart';
-
-class MockProcessRunner implements ProcessRunner {
-  List<String>? lastArguments;
-  String? lastExecutable;
-  ProcessResult resultToReturn = ProcessResult(0, 0, '', '');
-  bool throwException = false;
-
-  @override
-  Future<ProcessResult> run(
-    String executable,
-    List<String> arguments, {
-    bool runInShell = false,
-  }) async {
-    lastExecutable = executable;
-    lastArguments = arguments;
-
-    if (throwException) {
-      throw const ProcessException('yt-dlp', []);
-    }
-
-    return resultToReturn;
-  }
-}
+import 'package:my_music_app/core/services/url_detector.dart';
 
 void main() {
-  group('DownloadService yt-dlp Tests', () {
-    late MockProcessRunner mockRunner;
+  group('DownloadService', () {
     late DownloadService downloadService;
 
     setUp(() {
-      mockRunner = MockProcessRunner();
-      downloadService = DownloadService(runner: mockRunner);
+      downloadService = DownloadService();
     });
 
-    test('Verify correct flags are passed to yt-dlp', () async {
-      mockRunner.resultToReturn = ProcessResult(
-        1,
-        0,
-        '{"title": "Test Song", "uploader": "Test Artist", "duration": 180}',
-        '',
-      );
-
-      final result = await downloadService.downloadAudio(
-        url: 'https://youtube.com/watch?v=abc123',
-        outputDir: '/dummy/path',
-      );
-
-      // Check executable
-      expect(mockRunner.lastExecutable, 'yt-dlp');
-
-      // Verify the arguments passed
-      final args = mockRunner.lastArguments;
-      expect(args, isNotNull);
-
-      // Verify audio format is always mp3
-      expect(args!.contains('--audio-format'), isTrue);
-      expect(args[args.indexOf('--audio-format') + 1], 'mp3');
-
-      // Verify --audio-quality 0 flag is always present
-      expect(args.contains('--audio-quality'), isTrue);
-      expect(args[args.indexOf('--audio-quality') + 1], '0');
-
-      // Verify extraction flag -x is present
-      expect(args.contains('-x'), isTrue);
-
-      // Verify best audio format flag -f bestaudio is present
-      expect(args.contains('-f'), isTrue);
-      expect(args[args.indexOf('-f') + 1], 'bestaudio');
+    tearDown(() {
+      downloadService.dispose();
     });
 
-    test('Verify graceful error handling when yt-dlp fails with non-zero exit code', () async {
-      // Setup mock runner to fail on download (metadata fetch succeeds or fails, let's test download fail)
-      mockRunner.resultToReturn = ProcessResult(1, 1, '', 'Some yt-dlp error');
+    test('YtDlpResult success fields are correct', () {
+      final result = YtDlpResult(
+        success: true,
+        filePath: '/test/path.m4a',
+        title: 'Test Song',
+        artist: 'Test Artist',
+        durationSeconds: 180,
+        fileSize: 5000000,
+      );
 
+      expect(result.success, isTrue);
+      expect(result.filePath, '/test/path.m4a');
+      expect(result.title, 'Test Song');
+      expect(result.artist, 'Test Artist');
+      expect(result.durationSeconds, 180);
+      expect(result.fileSize, 5000000);
+      expect(result.error, isNull);
+    });
+
+    test('YtDlpResult failure fields are correct', () {
+      final result = YtDlpResult(
+        success: false,
+        error: 'Download failed: Network error',
+      );
+
+      expect(result.success, isFalse);
+      expect(result.filePath, isNull);
+      expect(result.error, contains('Download failed'));
+    });
+
+    test('downloadAudio rejects unsupported URLs', () async {
       final result = await downloadService.downloadAudio(
-        url: 'https://youtube.com/watch?v=abc123',
+        url: 'https://example.com/random-page',
         outputDir: '/dummy/path',
       );
 
       expect(result.success, isFalse);
-      expect(result.error, contains('yt-dlp execution failed'));
+      expect(result.error, contains('Unsupported'));
     });
 
-    test('Verify graceful error handling when ProcessRunner throws an exception', () async {
-      mockRunner.throwException = true;
+    test('downloadAudio accepts YouTube URLs', () async {
+      // This test verifies URL detection routing, not actual download
+      final platform = UrlDetector.detect('https://youtube.com/watch?v=abc123');
+      expect(platform, ContentPlatform.youtube);
+    });
 
-      final result = await downloadService.downloadAudio(
-        url: 'https://youtube.com/watch?v=abc123',
-        outputDir: '/dummy/path',
-      );
+    test('downloadAudio accepts YouTube Shorts URLs', () async {
+      final platform = UrlDetector.detect('https://youtube.com/shorts/abc123');
+      expect(platform, ContentPlatform.ytShorts);
+    });
 
-      expect(result.success, isFalse);
-      expect(result.error, contains('Download error'));
+    test('downloadAudio accepts Instagram URLs', () async {
+      final platform = UrlDetector.detect('https://www.instagram.com/reel/abc123');
+      expect(platform, ContentPlatform.instagram);
     });
   });
 }

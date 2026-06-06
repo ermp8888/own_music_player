@@ -471,7 +471,7 @@ class SettingsScreen extends ConsumerWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(
-              color: ThemeConstants.cardColorLight.withOpacity(0.5),
+              color: ThemeConstants.cardColorLight.withValues(alpha: 0.5),
               width: 1,
             ),
           ),
