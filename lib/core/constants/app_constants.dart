@@ -17,7 +17,7 @@ class AppConstants {
 
   // Database
   static const String databaseName = 'my_music_app.db';
-  static const int databaseVersion = 1;
+  static const int databaseVersion = 2;
 
   // Disclaimer
   static const String youtubeDisclaimer = '''
@@ -41,4 +41,14 @@ to download and use this content.
   static const String lastPlayedSongKey = 'last_played_song_id';
   static const String shuffleModeKey = 'shuffle_mode';
   static const String repeatModeKey = 'repeat_mode';
+
+  // Filter settings keys
+  static const String filterDevotionalKey = 'filter_devotional';
+  static const String filterKaraokeKey = 'filter_karaoke';
+  static const String filterRemixesKey = 'filter_remixes';
+  static const String filterInstrumentalsKey = 'filter_instrumentals';
+  static const String filterShortsKey = 'filter_shorts';
+
+  // Sleep timer
+  static const List<int> sleepTimerOptions = [15, 30, 45, 60];
 }

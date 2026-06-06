@@ -8,6 +8,8 @@ import '../../../../core/utils/formatters.dart';
 import '../../../local_music/presentation/providers/library_provider.dart';
 import '../providers/player_provider.dart';
 import '../widgets/waveform_visualization.dart';
+import '../../../../shared/widgets/song_actions_sheet.dart';
+import '../../../../core/services/sleep_timer_service.dart';
 
 /// Full screen player with clean modern design
 class PlayerScreen extends ConsumerStatefulWidget {
@@ -120,7 +122,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
-                          onPressed: () => _showSongOptions(context, song),
+                          onPressed: () => showSongActions(context, ref, song),
                           icon: const Icon(Icons.more_horiz_rounded),
                           iconSize: 24,
                           color: ThemeConstants.textPrimary,
@@ -447,6 +449,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           ],
                         ),
                       ),
+                      // Sleep Timer icon
+                      IconButton(
+                        onPressed: () => showSleepTimerSheet(context, ref),
+                        icon: const Icon(
+                          Icons.timer_rounded,
+                          color: ThemeConstants.textMuted,
+                        ),
+                        iconSize: 24,
+                      ),
                       // Share icon
                       IconButton(
                         onPressed: () => ShareService.shareSong(song),
@@ -466,45 +477,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           },
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (_, __) => const Center(child: Text('Error loading player')),
-        ),
-      ),
-    );
-  }
-
-  void _showSongOptions(BuildContext context, dynamic song) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.share_rounded),
-              title: const Text('Share Song'),
-              onTap: () {
-                Navigator.pop(context);
-                ShareService.shareSong(song);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.share_outlined),
-              title: const Text('Share Now Playing'),
-              subtitle: const Text('Share what you\'re listening to'),
-              onTap: () {
-                Navigator.pop(context);
-                ShareService.shareSongInfo(song);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.playlist_add_rounded),
-              title: const Text('Add to Playlist'),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Show playlist picker
-              },
-            ),
-          ],
         ),
       ),
     );

@@ -39,7 +39,13 @@ class AppDatabase extends _$AppDatabase {
           ));
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          // Handle migrations here
+          if (from < 2) {
+            // v1 → v2: Add sourcePlatform, bitrate, mood, isReported columns
+            await m.addColumn(songs, songs.sourcePlatform);
+            await m.addColumn(songs, songs.bitrate);
+            await m.addColumn(songs, songs.mood);
+            await m.addColumn(songs, songs.isReported);
+          }
         },
       );
 
@@ -280,6 +286,33 @@ class AppDatabase extends _$AppDatabase {
       ..orderBy([OrderingTerm.asc(playlistSongs.sortOrder)]);
 
     return query.watch().map((rows) => rows.map((row) => row.readTable(songs)).toList());
+  }
+
+  // ============ Report Bad Song ============
+
+  /// Report a song as bad quality
+  Future<void> reportSong(int songId) async {
+    await (update(songs)..where((t) => t.id.equals(songId)))
+        .write(const SongsCompanion(isReported: Value(true)));
+  }
+
+  /// Un-report a song
+  Future<void> unreportSong(int songId) async {
+    await (update(songs)..where((t) => t.id.equals(songId)))
+        .write(const SongsCompanion(isReported: Value(false)));
+  }
+
+  /// Get all reported songs
+  Future<List<Song>> getReportedSongs() async {
+    return (select(songs)..where((t) => t.isReported.equals(true))).get();
+  }
+
+  /// Delete a song from the database
+  Future<void> deleteSongById(int songId) async {
+    // First remove from all playlists
+    await (delete(playlistSongs)..where((t) => t.songId.equals(songId))).go();
+    // Then delete the song
+    await (delete(songs)..where((t) => t.id.equals(songId))).go();
   }
 }
 

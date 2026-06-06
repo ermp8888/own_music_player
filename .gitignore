@@ -49,3 +49,6 @@ test_modules.json
 test_search.json
 test_swagger.json
 .metadata
+
+# Environment variables (API keys)
+.env

@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/theme_constants.dart';
-import '../../../../core/services/audio_handler.dart';
 import '../providers/player_provider.dart';
 import '../screens/player_screen.dart';
 import '../../../../main.dart';

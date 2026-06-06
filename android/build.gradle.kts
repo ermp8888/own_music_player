@@ -35,12 +35,21 @@ subprojects {
     }
 }
 
-// Force Kotlin JVM target for all subprojects
+// Force Kotlin JVM target to match the Java target for all subprojects
 subprojects {
     plugins.withId("org.jetbrains.kotlin.android") {
         tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+            val android = project.extensions.findByType(com.android.build.gradle.BaseExtension::class.java)
+            val target = android?.compileOptions?.targetCompatibility?.toString() ?: "11"
+            val jvmTargetVal = when (target) {
+                "1.8" -> org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8
+                "8" -> org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8
+                "11" -> org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+                "17" -> org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+                else -> org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+            }
             compilerOptions {
-                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+                jvmTarget.set(jvmTargetVal)
             }
         }
     }

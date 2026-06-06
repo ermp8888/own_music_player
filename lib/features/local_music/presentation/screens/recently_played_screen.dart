@@ -7,7 +7,6 @@ import '../../../../shared/widgets/gradient_background.dart';
 import '../widgets/song_tile.dart';
 import '../../../player/presentation/providers/player_provider.dart';
 import '../../../player/presentation/widgets/mini_player.dart';
-import '../providers/library_provider.dart';
 
 /// Provider for recently played songs only
 final recentlyPlayedSongsProvider = FutureProvider<List<Song>>((ref) async {

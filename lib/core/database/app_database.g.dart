@@ -147,6 +147,53 @@ class $SongsTable extends Songs with TableInfo<$SongsTable, Song> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _sourcePlatformMeta = const VerificationMeta(
+    'sourcePlatform',
+  );
+  @override
+  late final GeneratedColumn<String> sourcePlatform = GeneratedColumn<String>(
+    'source_platform',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _bitrateMeta = const VerificationMeta(
+    'bitrate',
+  );
+  @override
+  late final GeneratedColumn<int> bitrate = GeneratedColumn<int>(
+    'bitrate',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _moodMeta = const VerificationMeta('mood');
+  @override
+  late final GeneratedColumn<String> mood = GeneratedColumn<String>(
+    'mood',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isReportedMeta = const VerificationMeta(
+    'isReported',
+  );
+  @override
+  late final GeneratedColumn<bool> isReported = GeneratedColumn<bool>(
+    'is_reported',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_reported" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -161,6 +208,10 @@ class $SongsTable extends Songs with TableInfo<$SongsTable, Song> {
     lastPlayed,
     dateAdded,
     isFavorite,
+    sourcePlatform,
+    bitrate,
+    mood,
+    isReported,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -250,6 +301,33 @@ class $SongsTable extends Songs with TableInfo<$SongsTable, Song> {
         isFavorite.isAcceptableOrUnknown(data['is_favorite']!, _isFavoriteMeta),
       );
     }
+    if (data.containsKey('source_platform')) {
+      context.handle(
+        _sourcePlatformMeta,
+        sourcePlatform.isAcceptableOrUnknown(
+          data['source_platform']!,
+          _sourcePlatformMeta,
+        ),
+      );
+    }
+    if (data.containsKey('bitrate')) {
+      context.handle(
+        _bitrateMeta,
+        bitrate.isAcceptableOrUnknown(data['bitrate']!, _bitrateMeta),
+      );
+    }
+    if (data.containsKey('mood')) {
+      context.handle(
+        _moodMeta,
+        mood.isAcceptableOrUnknown(data['mood']!, _moodMeta),
+      );
+    }
+    if (data.containsKey('is_reported')) {
+      context.handle(
+        _isReportedMeta,
+        isReported.isAcceptableOrUnknown(data['is_reported']!, _isReportedMeta),
+      );
+    }
     return context;
   }
 
@@ -307,6 +385,22 @@ class $SongsTable extends Songs with TableInfo<$SongsTable, Song> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_favorite'],
       )!,
+      sourcePlatform: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_platform'],
+      ),
+      bitrate: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}bitrate'],
+      )!,
+      mood: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mood'],
+      ),
+      isReported: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_reported'],
+      )!,
     );
   }
 
@@ -329,6 +423,18 @@ class Song extends DataClass implements Insertable<Song> {
   final DateTime? lastPlayed;
   final DateTime dateAdded;
   final bool isFavorite;
+
+  /// Source platform: 'youtube', 'yt_shorts', 'instagram', 'local', 'online'
+  final String? sourcePlatform;
+
+  /// Audio bitrate in kbps (0 = unknown)
+  final int bitrate;
+
+  /// AI-detected mood tag: 'happy', 'sad', 'chill', 'energetic', 'romantic'
+  final String? mood;
+
+  /// Whether the user has reported this song as bad/unwanted
+  final bool isReported;
   const Song({
     required this.id,
     required this.filePath,
@@ -342,6 +448,10 @@ class Song extends DataClass implements Insertable<Song> {
     this.lastPlayed,
     required this.dateAdded,
     required this.isFavorite,
+    this.sourcePlatform,
+    required this.bitrate,
+    this.mood,
+    required this.isReported,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -362,6 +472,14 @@ class Song extends DataClass implements Insertable<Song> {
     }
     map['date_added'] = Variable<DateTime>(dateAdded);
     map['is_favorite'] = Variable<bool>(isFavorite);
+    if (!nullToAbsent || sourcePlatform != null) {
+      map['source_platform'] = Variable<String>(sourcePlatform);
+    }
+    map['bitrate'] = Variable<int>(bitrate);
+    if (!nullToAbsent || mood != null) {
+      map['mood'] = Variable<String>(mood);
+    }
+    map['is_reported'] = Variable<bool>(isReported);
     return map;
   }
 
@@ -383,6 +501,12 @@ class Song extends DataClass implements Insertable<Song> {
           : Value(lastPlayed),
       dateAdded: Value(dateAdded),
       isFavorite: Value(isFavorite),
+      sourcePlatform: sourcePlatform == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourcePlatform),
+      bitrate: Value(bitrate),
+      mood: mood == null && nullToAbsent ? const Value.absent() : Value(mood),
+      isReported: Value(isReported),
     );
   }
 
@@ -404,6 +528,10 @@ class Song extends DataClass implements Insertable<Song> {
       lastPlayed: serializer.fromJson<DateTime?>(json['lastPlayed']),
       dateAdded: serializer.fromJson<DateTime>(json['dateAdded']),
       isFavorite: serializer.fromJson<bool>(json['isFavorite']),
+      sourcePlatform: serializer.fromJson<String?>(json['sourcePlatform']),
+      bitrate: serializer.fromJson<int>(json['bitrate']),
+      mood: serializer.fromJson<String?>(json['mood']),
+      isReported: serializer.fromJson<bool>(json['isReported']),
     );
   }
   @override
@@ -422,6 +550,10 @@ class Song extends DataClass implements Insertable<Song> {
       'lastPlayed': serializer.toJson<DateTime?>(lastPlayed),
       'dateAdded': serializer.toJson<DateTime>(dateAdded),
       'isFavorite': serializer.toJson<bool>(isFavorite),
+      'sourcePlatform': serializer.toJson<String?>(sourcePlatform),
+      'bitrate': serializer.toJson<int>(bitrate),
+      'mood': serializer.toJson<String?>(mood),
+      'isReported': serializer.toJson<bool>(isReported),
     };
   }
 
@@ -438,6 +570,10 @@ class Song extends DataClass implements Insertable<Song> {
     Value<DateTime?> lastPlayed = const Value.absent(),
     DateTime? dateAdded,
     bool? isFavorite,
+    Value<String?> sourcePlatform = const Value.absent(),
+    int? bitrate,
+    Value<String?> mood = const Value.absent(),
+    bool? isReported,
   }) => Song(
     id: id ?? this.id,
     filePath: filePath ?? this.filePath,
@@ -451,6 +587,12 @@ class Song extends DataClass implements Insertable<Song> {
     lastPlayed: lastPlayed.present ? lastPlayed.value : this.lastPlayed,
     dateAdded: dateAdded ?? this.dateAdded,
     isFavorite: isFavorite ?? this.isFavorite,
+    sourcePlatform: sourcePlatform.present
+        ? sourcePlatform.value
+        : this.sourcePlatform,
+    bitrate: bitrate ?? this.bitrate,
+    mood: mood.present ? mood.value : this.mood,
+    isReported: isReported ?? this.isReported,
   );
   Song copyWithCompanion(SongsCompanion data) {
     return Song(
@@ -472,6 +614,14 @@ class Song extends DataClass implements Insertable<Song> {
       isFavorite: data.isFavorite.present
           ? data.isFavorite.value
           : this.isFavorite,
+      sourcePlatform: data.sourcePlatform.present
+          ? data.sourcePlatform.value
+          : this.sourcePlatform,
+      bitrate: data.bitrate.present ? data.bitrate.value : this.bitrate,
+      mood: data.mood.present ? data.mood.value : this.mood,
+      isReported: data.isReported.present
+          ? data.isReported.value
+          : this.isReported,
     );
   }
 
@@ -489,7 +639,11 @@ class Song extends DataClass implements Insertable<Song> {
           ..write('playCount: $playCount, ')
           ..write('lastPlayed: $lastPlayed, ')
           ..write('dateAdded: $dateAdded, ')
-          ..write('isFavorite: $isFavorite')
+          ..write('isFavorite: $isFavorite, ')
+          ..write('sourcePlatform: $sourcePlatform, ')
+          ..write('bitrate: $bitrate, ')
+          ..write('mood: $mood, ')
+          ..write('isReported: $isReported')
           ..write(')'))
         .toString();
   }
@@ -508,6 +662,10 @@ class Song extends DataClass implements Insertable<Song> {
     lastPlayed,
     dateAdded,
     isFavorite,
+    sourcePlatform,
+    bitrate,
+    mood,
+    isReported,
   );
   @override
   bool operator ==(Object other) =>
@@ -524,7 +682,11 @@ class Song extends DataClass implements Insertable<Song> {
           other.playCount == this.playCount &&
           other.lastPlayed == this.lastPlayed &&
           other.dateAdded == this.dateAdded &&
-          other.isFavorite == this.isFavorite);
+          other.isFavorite == this.isFavorite &&
+          other.sourcePlatform == this.sourcePlatform &&
+          other.bitrate == this.bitrate &&
+          other.mood == this.mood &&
+          other.isReported == this.isReported);
 }
 
 class SongsCompanion extends UpdateCompanion<Song> {
@@ -540,6 +702,10 @@ class SongsCompanion extends UpdateCompanion<Song> {
   final Value<DateTime?> lastPlayed;
   final Value<DateTime> dateAdded;
   final Value<bool> isFavorite;
+  final Value<String?> sourcePlatform;
+  final Value<int> bitrate;
+  final Value<String?> mood;
+  final Value<bool> isReported;
   const SongsCompanion({
     this.id = const Value.absent(),
     this.filePath = const Value.absent(),
@@ -553,6 +719,10 @@ class SongsCompanion extends UpdateCompanion<Song> {
     this.lastPlayed = const Value.absent(),
     this.dateAdded = const Value.absent(),
     this.isFavorite = const Value.absent(),
+    this.sourcePlatform = const Value.absent(),
+    this.bitrate = const Value.absent(),
+    this.mood = const Value.absent(),
+    this.isReported = const Value.absent(),
   });
   SongsCompanion.insert({
     this.id = const Value.absent(),
@@ -567,6 +737,10 @@ class SongsCompanion extends UpdateCompanion<Song> {
     this.lastPlayed = const Value.absent(),
     this.dateAdded = const Value.absent(),
     this.isFavorite = const Value.absent(),
+    this.sourcePlatform = const Value.absent(),
+    this.bitrate = const Value.absent(),
+    this.mood = const Value.absent(),
+    this.isReported = const Value.absent(),
   }) : filePath = Value(filePath),
        title = Value(title);
   static Insertable<Song> custom({
@@ -582,6 +756,10 @@ class SongsCompanion extends UpdateCompanion<Song> {
     Expression<DateTime>? lastPlayed,
     Expression<DateTime>? dateAdded,
     Expression<bool>? isFavorite,
+    Expression<String>? sourcePlatform,
+    Expression<int>? bitrate,
+    Expression<String>? mood,
+    Expression<bool>? isReported,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -596,6 +774,10 @@ class SongsCompanion extends UpdateCompanion<Song> {
       if (lastPlayed != null) 'last_played': lastPlayed,
       if (dateAdded != null) 'date_added': dateAdded,
       if (isFavorite != null) 'is_favorite': isFavorite,
+      if (sourcePlatform != null) 'source_platform': sourcePlatform,
+      if (bitrate != null) 'bitrate': bitrate,
+      if (mood != null) 'mood': mood,
+      if (isReported != null) 'is_reported': isReported,
     });
   }
 
@@ -612,6 +794,10 @@ class SongsCompanion extends UpdateCompanion<Song> {
     Value<DateTime?>? lastPlayed,
     Value<DateTime>? dateAdded,
     Value<bool>? isFavorite,
+    Value<String?>? sourcePlatform,
+    Value<int>? bitrate,
+    Value<String?>? mood,
+    Value<bool>? isReported,
   }) {
     return SongsCompanion(
       id: id ?? this.id,
@@ -626,6 +812,10 @@ class SongsCompanion extends UpdateCompanion<Song> {
       lastPlayed: lastPlayed ?? this.lastPlayed,
       dateAdded: dateAdded ?? this.dateAdded,
       isFavorite: isFavorite ?? this.isFavorite,
+      sourcePlatform: sourcePlatform ?? this.sourcePlatform,
+      bitrate: bitrate ?? this.bitrate,
+      mood: mood ?? this.mood,
+      isReported: isReported ?? this.isReported,
     );
   }
 
@@ -668,6 +858,18 @@ class SongsCompanion extends UpdateCompanion<Song> {
     if (isFavorite.present) {
       map['is_favorite'] = Variable<bool>(isFavorite.value);
     }
+    if (sourcePlatform.present) {
+      map['source_platform'] = Variable<String>(sourcePlatform.value);
+    }
+    if (bitrate.present) {
+      map['bitrate'] = Variable<int>(bitrate.value);
+    }
+    if (mood.present) {
+      map['mood'] = Variable<String>(mood.value);
+    }
+    if (isReported.present) {
+      map['is_reported'] = Variable<bool>(isReported.value);
+    }
     return map;
   }
 
@@ -685,7 +887,11 @@ class SongsCompanion extends UpdateCompanion<Song> {
           ..write('playCount: $playCount, ')
           ..write('lastPlayed: $lastPlayed, ')
           ..write('dateAdded: $dateAdded, ')
-          ..write('isFavorite: $isFavorite')
+          ..write('isFavorite: $isFavorite, ')
+          ..write('sourcePlatform: $sourcePlatform, ')
+          ..write('bitrate: $bitrate, ')
+          ..write('mood: $mood, ')
+          ..write('isReported: $isReported')
           ..write(')'))
         .toString();
   }
@@ -1622,6 +1828,10 @@ typedef $$SongsTableCreateCompanionBuilder =
       Value<DateTime?> lastPlayed,
       Value<DateTime> dateAdded,
       Value<bool> isFavorite,
+      Value<String?> sourcePlatform,
+      Value<int> bitrate,
+      Value<String?> mood,
+      Value<bool> isReported,
     });
 typedef $$SongsTableUpdateCompanionBuilder =
     SongsCompanion Function({
@@ -1637,6 +1847,10 @@ typedef $$SongsTableUpdateCompanionBuilder =
       Value<DateTime?> lastPlayed,
       Value<DateTime> dateAdded,
       Value<bool> isFavorite,
+      Value<String?> sourcePlatform,
+      Value<int> bitrate,
+      Value<String?> mood,
+      Value<bool> isReported,
     });
 
 final class $$SongsTableReferences
@@ -1727,6 +1941,26 @@ class $$SongsTableFilterComposer extends Composer<_$AppDatabase, $SongsTable> {
 
   ColumnFilters<bool> get isFavorite => $composableBuilder(
     column: $table.isFavorite,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourcePlatform => $composableBuilder(
+    column: $table.sourcePlatform,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bitrate => $composableBuilder(
+    column: $table.bitrate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mood => $composableBuilder(
+    column: $table.mood,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isReported => $composableBuilder(
+    column: $table.isReported,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1824,6 +2058,26 @@ class $$SongsTableOrderingComposer
     column: $table.isFavorite,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get sourcePlatform => $composableBuilder(
+    column: $table.sourcePlatform,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bitrate => $composableBuilder(
+    column: $table.bitrate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mood => $composableBuilder(
+    column: $table.mood,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isReported => $composableBuilder(
+    column: $table.isReported,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SongsTableAnnotationComposer
@@ -1874,6 +2128,22 @@ class $$SongsTableAnnotationComposer
 
   GeneratedColumn<bool> get isFavorite => $composableBuilder(
     column: $table.isFavorite,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourcePlatform => $composableBuilder(
+    column: $table.sourcePlatform,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get bitrate =>
+      $composableBuilder(column: $table.bitrate, builder: (column) => column);
+
+  GeneratedColumn<String> get mood =>
+      $composableBuilder(column: $table.mood, builder: (column) => column);
+
+  GeneratedColumn<bool> get isReported => $composableBuilder(
+    column: $table.isReported,
     builder: (column) => column,
   );
 
@@ -1943,6 +2213,10 @@ class $$SongsTableTableManager
                 Value<DateTime?> lastPlayed = const Value.absent(),
                 Value<DateTime> dateAdded = const Value.absent(),
                 Value<bool> isFavorite = const Value.absent(),
+                Value<String?> sourcePlatform = const Value.absent(),
+                Value<int> bitrate = const Value.absent(),
+                Value<String?> mood = const Value.absent(),
+                Value<bool> isReported = const Value.absent(),
               }) => SongsCompanion(
                 id: id,
                 filePath: filePath,
@@ -1956,6 +2230,10 @@ class $$SongsTableTableManager
                 lastPlayed: lastPlayed,
                 dateAdded: dateAdded,
                 isFavorite: isFavorite,
+                sourcePlatform: sourcePlatform,
+                bitrate: bitrate,
+                mood: mood,
+                isReported: isReported,
               ),
           createCompanionCallback:
               ({
@@ -1971,6 +2249,10 @@ class $$SongsTableTableManager
                 Value<DateTime?> lastPlayed = const Value.absent(),
                 Value<DateTime> dateAdded = const Value.absent(),
                 Value<bool> isFavorite = const Value.absent(),
+                Value<String?> sourcePlatform = const Value.absent(),
+                Value<int> bitrate = const Value.absent(),
+                Value<String?> mood = const Value.absent(),
+                Value<bool> isReported = const Value.absent(),
               }) => SongsCompanion.insert(
                 id: id,
                 filePath: filePath,
@@ -1984,6 +2266,10 @@ class $$SongsTableTableManager
                 lastPlayed: lastPlayed,
                 dateAdded: dateAdded,
                 isFavorite: isFavorite,
+                sourcePlatform: sourcePlatform,
+                bitrate: bitrate,
+                mood: mood,
+                isReported: isReported,
               ),
           withReferenceMapper: (p0) => p0
               .map(

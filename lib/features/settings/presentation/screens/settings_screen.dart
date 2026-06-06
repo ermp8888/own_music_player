@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/providers/download_location_provider.dart';
+import '../../../../core/providers/gemini_api_key_provider.dart';
+import '../../../player/presentation/widgets/equalizer_widget.dart';
+import 'filter_settings_screen.dart';
 
 /// Settings Screen with app options
 class SettingsScreen extends ConsumerWidget {
@@ -53,10 +55,58 @@ class SettingsScreen extends ConsumerWidget {
         // Playback Section
         _buildSectionHeader('Playback'),
         _buildSettingsTile(
+          icon: Icons.filter_alt_rounded,
+          title: 'Content Filtering',
+          subtitle: 'Smart filters & Shield settings',
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const FilterSettingsScreen(),
+              ),
+            );
+          },
+        ),
+        _buildSettingsTile(
           icon: Icons.high_quality_rounded,
           title: 'Audio Quality',
           subtitle: 'High (320kbps)',
           onTap: () {},
+        ),
+        _buildSettingsTile(
+          icon: Icons.equalizer_rounded,
+          title: 'Equalizer',
+          subtitle: 'Adjust audio frequencies',
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => Scaffold(
+                  appBar: AppBar(
+                    title: const Text('Equalizer'),
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                  ),
+                  backgroundColor: ThemeConstants.backgroundColor,
+                  body: const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: EqualizerWidget(),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+
+        const SizedBox(height: 24),
+
+        // AI & Classification Section
+        _buildSectionHeader('AI & Classification'),
+        _buildSettingsTile(
+          icon: Icons.vpn_key_rounded,
+          title: 'Gemini API Key',
+          subtitle: ref.watch(geminiApiKeyProvider).isEmpty
+              ? 'Not configured (Tap to set)'
+              : '••••••••••••',
+          onTap: () => _showApiKeyDialog(context, ref),
         ),
 
         const SizedBox(height: 40),
@@ -406,6 +456,84 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _showApiKeyDialog(BuildContext context, WidgetRef ref) {
+    final currentKey = ref.read(geminiApiKeyProvider);
+    final controller = TextEditingController(text: currentKey);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: ThemeConstants.cardColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: ThemeConstants.cardColorLight.withOpacity(0.5),
+              width: 1,
+            ),
+          ),
+          title: const Text(
+            'Gemini API Key',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Get your key from Google AI Studio. This key is used for classification and mood tagging.',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Enter API Key',
+                  hintStyle: const TextStyle(color: Colors.white30),
+                  filled: true,
+                  fillColor: ThemeConstants.cardColorLight,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                obscureText: true,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ThemeConstants.primaryColor,
+              ),
+              onPressed: () async {
+                await ref.read(geminiApiKeyProvider.notifier).setApiKey(controller.text.trim());
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Gemini API Key saved successfully.'),
+                  ),
+                );
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

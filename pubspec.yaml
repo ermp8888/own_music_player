@@ -59,6 +59,13 @@ dependencies:
   shared_preferences: ^2.3.5
   http: ^1.6.0
 
+  # AI
+  google_generative_ai: ^0.4.6
+  flutter_dotenv: ^5.2.1
+
+  # Voice
+  speech_to_text: ^7.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -68,6 +75,8 @@ dev_dependencies:
   drift_dev: ^2.24.0
   flutter_launcher_icons: ^0.14.3
   flutter_native_splash: ^2.4.4
+  mockito: ^5.4.4
+  fake_async: ^1.3.1
 
 flutter:
   uses-material-design: true
@@ -75,6 +84,7 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - .env
 
 # App Icon Configuration
 flutter_launcher_icons:

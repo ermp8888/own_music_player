@@ -14,4 +14,16 @@ class Songs extends Table {
   DateTimeColumn get lastPlayed => dateTime().nullable()();
   DateTimeColumn get dateAdded => dateTime().withDefault(currentDateAndTime)();
   BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
+
+  /// Source platform: 'youtube', 'yt_shorts', 'instagram', 'local', 'online'
+  TextColumn get sourcePlatform => text().nullable()();
+
+  /// Audio bitrate in kbps (0 = unknown)
+  IntColumn get bitrate => integer().withDefault(const Constant(0))();
+
+  /// AI-detected mood tag: 'happy', 'sad', 'chill', 'energetic', 'romantic'
+  TextColumn get mood => text().nullable()();
+
+  /// Whether the user has reported this song as bad/unwanted
+  BoolColumn get isReported => boolean().withDefault(const Constant(false))();
 }

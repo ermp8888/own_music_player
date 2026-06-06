@@ -8,6 +8,9 @@ import '../../../local_music/presentation/providers/library_provider.dart';
 import '../../../youtube_import/presentation/screens/downloads_screen.dart';
 import '../../data/repositories/online_music_repository.dart';
 import '../../../player/presentation/providers/player_provider.dart';
+import '../../../../core/providers/filter_settings_provider.dart';
+import '../../../../core/services/filter_pipeline.dart';
+import '../../../../core/services/gemini_service.dart';
 
 /// Provider for holding the search query
 final onlineMusicSearchQueryProvider = StateProvider<String>((ref) {
@@ -23,7 +26,22 @@ final onlineMusicSongsProvider = FutureProvider.autoDispose<List<Song>>((ref) as
     return [];
   }
   
-  return repository.searchSongs(query);
+  final rawSongs = await repository.searchSongs(query);
+  final filterSettings = ref.watch(filterSettingsProvider);
+  final geminiService = ref.watch(geminiServiceProvider);
+  final pipeline = FilterPipeline(geminiService: geminiService);
+
+  return rawSongs.where((song) {
+    // Create a generic model map for isBlacklisted check
+    final tempSong = {
+      'title': song.title,
+      'artist': song.artist,
+      'bitrate': song.bitrate,
+      'duration': song.duration,
+      'fileSize': song.fileSize,
+    };
+    return !pipeline.isBlacklisted(tempSong, settings: filterSettings);
+  }).toList();
 });
 
 enum OnlineDownloadStatus { idle, downloading, complete, error }

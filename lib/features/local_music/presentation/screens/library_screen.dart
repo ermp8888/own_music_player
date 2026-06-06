@@ -6,8 +6,10 @@ import '../../../../core/services/share_service.dart';
 import '../../../../shared/widgets/gradient_background.dart';
 import '../../../player/presentation/providers/player_provider.dart';
 import '../../../player/presentation/widgets/mini_player.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../providers/library_provider.dart';
 import '../widgets/song_tile.dart';
+import '../../../../shared/widgets/song_actions_sheet.dart';
 
 /// Library screen showing all local songs with search
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -21,6 +23,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
   bool _isSearching = false;
+  late stt.SpeechToText _speech;
+  bool _isListening = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _speech = stt.SpeechToText();
+  }
 
   @override
   void dispose() {
@@ -76,6 +86,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                 hintText: 'Search songs...',
                                 border: InputBorder.none,
                                 hintStyle: TextStyle(color: ThemeConstants.textMuted),
+                                suffixIcon: IconButton(
+                                  icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
+                                  color: _isListening ? ThemeConstants.primaryColor : ThemeConstants.textMuted,
+                                  onPressed: _listen,
+                                ),
                               ),
                               style: const TextStyle(fontSize: 18),
                               onChanged: (value) => setState(() => _searchQuery = value),
@@ -224,7 +239,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                           );
                                     },
                                     onMoreTap: () {
-                                      _showSongOptions(context, ref, song);
+                                      showSongActions(context, ref, song);
                                     },
                                   )
                                       .animate(delay: Duration(milliseconds: 30 * index.clamp(0, 20)))
@@ -354,123 +369,27 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     );
   }
 
-  void _showSongOptions(BuildContext context, WidgetRef ref, dynamic song) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit_rounded),
-              title: const Text('Rename'),
-              onTap: () {
-                Navigator.pop(context);
-                _showRenameDialog(context, ref, song);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.playlist_add),
-              title: const Text('Add to playlist'),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Show playlist picker
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                song.isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: song.isFavorite ? Colors.red : null,
-              ),
-              title: Text(
-                song.isFavorite ? 'Remove from favorites' : 'Add to favorites',
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                ref.read(databaseProvider).toggleFavorite(song.id);
-                ref.read(libraryProvider.notifier).loadLibrary();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.share_rounded),
-              title: const Text('Share'),
-              onTap: () {
-                Navigator.pop(context);
-                ShareService.shareSong(song);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showRenameDialog(BuildContext context, WidgetRef ref, dynamic song) {
-    final titleController = TextEditingController(text: song.title);
-    final artistController = TextEditingController(text: song.artist);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: ThemeConstants.cardColor,
-        title: const Text('Rename Song'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: InputDecoration(
-                labelText: 'Title',
-                filled: true,
-                fillColor: ThemeConstants.backgroundColor,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: artistController,
-              decoration: InputDecoration(
-                labelText: 'Artist',
-                filled: true,
-                fillColor: ThemeConstants.backgroundColor,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final newTitle = titleController.text.trim();
-              final newArtist = artistController.text.trim();
-              if (newTitle.isNotEmpty) {
-                await ref.read(databaseProvider).renameSong(
-                  song.id,
-                  title: newTitle.isNotEmpty ? newTitle : null,
-                  artist: newArtist.isNotEmpty ? newArtist : null,
-                );
-                ref.read(libraryProvider.notifier).loadLibrary();
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Song renamed')),
-                );
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
+  void _listen() async {
+    if (!_isListening) {
+      bool available = await _speech.initialize(
+        onStatus: (val) => debugPrint('onStatus: $val'),
+        onError: (val) => debugPrint('onError: $val'),
+      );
+      if (available) {
+        setState(() => _isListening = true);
+        _speech.listen(
+          onResult: (val) => setState(() {
+            _searchController.text = val.recognizedWords;
+            _searchQuery = val.recognizedWords;
+            if (val.hasConfidenceRating && val.confidence > 0) {
+              // Can use confidence rating if needed
+            }
+          }),
+        );
+      }
+    } else {
+      setState(() => _isListening = false);
+      _speech.stop();
+    }
   }
 }

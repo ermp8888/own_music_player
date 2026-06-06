@@ -8,6 +8,13 @@ import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/providers/download_location_provider.dart';
+import '../../../../core/services/download_service.dart';
+import '../../../../core/services/filter_pipeline.dart';
+import '../../../../core/services/gemini_service.dart';
+import '../../../../core/providers/filter_settings_provider.dart';
+import '../../../../core/database/app_database.dart';
+import '../../../../core/services/url_detector.dart';
+import 'package:drift/drift.dart' show Value;
 import '../../../../shared/widgets/gradient_background.dart';
 import '../../../../shared/widgets/glass_container.dart';
 import '../../../local_music/presentation/providers/library_provider.dart';
@@ -27,7 +34,15 @@ enum DownloadStatus { idle, fetching, downloading, complete, error }
 /// Download state provider
 final downloadStateProvider =
     StateNotifierProvider<DownloadStateNotifier, DownloadState>((ref) {
-  return DownloadStateNotifier();
+  final downloadService = ref.watch(downloadServiceProvider);
+  final database = ref.watch(databaseProvider);
+  final geminiService = ref.watch(geminiServiceProvider);
+  return DownloadStateNotifier(
+    downloadService: downloadService,
+    database: database,
+    geminiService: geminiService,
+    ref: ref,
+  );
 });
 
 class DownloadState {
@@ -83,105 +98,56 @@ class DownloadState {
 }
 
 class DownloadStateNotifier extends StateNotifier<DownloadState> {
-  DownloadStateNotifier() : super(const DownloadState());
+  final DownloadService _downloadService;
+  final AppDatabase _database;
+  final GeminiService? _geminiService;
+  final Ref _ref;
 
-  YoutubeExplode? _yt;
-  Video? _currentVideo;
-  StreamManifest? _manifest;
-  AudioOnlyStreamInfo? _audioStream;
-  MuxedStreamInfo? _videoStream;
+  String? _currentUrl;
 
-  /// Parse video ID from URL
-  VideoId? _parseVideoId(String url) {
-    try {
-      final id = VideoId.parseVideoId(url);
-      if (id != null) {
-        return VideoId(id);
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
-  }
+  DownloadStateNotifier({
+    required DownloadService downloadService,
+    required AppDatabase database,
+    GeminiService? geminiService,
+    required Ref ref,
+  })  : _downloadService = downloadService,
+        _database = database,
+        _geminiService = geminiService,
+        _ref = ref,
+        super(const DownloadState());
 
   /// Fetch video info and stream manifest
   Future<void> fetchVideoInfo(String url) async {
-    // Create fresh instance
-    _yt?.close();
-    _yt = YoutubeExplode();
-    
+    _currentUrl = url.trim();
     try {
       state = state.copyWith(
         status: DownloadStatus.fetching,
         errorMessage: null,
-        debugInfo: 'Parsing URL...',
+        debugInfo: 'Fetching metadata...',
       );
 
-      final videoId = _parseVideoId(url);
-      if (videoId == null) {
+      final metadata = await _downloadService.getMetadata(_currentUrl!);
+      if (metadata == null) {
         state = state.copyWith(
           status: DownloadStatus.error,
-          errorMessage: 'Invalid YouTube URL',
+          errorMessage: 'Failed to fetch metadata. Make sure the URL is valid.',
         );
         return;
       }
 
-      debugPrint('[YT] Video ID: ${videoId.value}');
-      state = state.copyWith(debugInfo: 'Fetching video info...');
+      final title = metadata['title'] as String? ?? 'Downloaded Song';
+      final artist = metadata['uploader'] as String? ?? metadata['artist'] as String? ?? 'Unknown Artist';
+      final durationSeconds = metadata['duration'] as int? ?? 0;
 
-      // Get video metadata
-      _currentVideo = await _yt!.videos.get(videoId);
-      debugPrint('[YT] Title: ${_currentVideo!.title}');
-
-      state = state.copyWith(
-        videoTitle: _currentVideo!.title,
-        videoAuthor: _currentVideo!.author,
-        videoDuration: _currentVideo!.duration,
-        debugInfo: 'Getting stream manifest...',
-      );
-
-      // Get stream manifest with specific clients that work better
-      _manifest = await _yt!.videos.streamsClient.getManifest(
-        videoId,
-        ytClients: [
-          YoutubeApiClient.safari,
-          YoutubeApiClient.androidVr,
-          YoutubeApiClient.android,
-        ],
-      );
-
-      debugPrint('[YT] Audio streams: ${_manifest!.audioOnly.length}');
-      debugPrint('[YT] Muxed streams: ${_manifest!.muxed.length}');
-
-      // Get best audio stream
-      if (_manifest!.audioOnly.isNotEmpty) {
-        _audioStream = _manifest!.audioOnly.withHighestBitrate();
-        debugPrint('[YT] Selected audio: ${_audioStream!.container.name} - ${_audioStream!.bitrate.kiloBitsPerSecond.toInt()} kbps');
-      }
-      
-      // Get best video stream (muxed)
-      if (_manifest!.muxed.isNotEmpty) {
-        _videoStream = _manifest!.muxed.withHighestBitrate();
-        debugPrint('[YT] Selected video: ${_videoStream!.container.name} - ${_videoStream!.videoQuality}');
-      }
-
-      if (_audioStream == null && _videoStream == null) {
-        state = state.copyWith(
-          status: DownloadStatus.error,
-          errorMessage: 'No streams available for this video',
-        );
-        return;
-      }
-
-      final size = _audioStream?.size.totalBytes ?? _videoStream?.size.totalBytes ?? 0;
       state = state.copyWith(
         status: DownloadStatus.idle,
-        totalBytes: size,
-        debugInfo: 'Ready (${(size / 1024 / 1024).toStringAsFixed(1)} MB)',
+        videoTitle: title,
+        videoAuthor: artist,
+        videoDuration: Duration(seconds: durationSeconds),
+        totalBytes: metadata['filesize'] as int? ?? 0,
+        debugInfo: 'Ready',
       );
-    } catch (e, stack) {
-      debugPrint('[YT] Error: $e');
-      debugPrint('[YT] Stack: $stack');
+    } catch (e) {
       state = state.copyWith(
         status: DownloadStatus.error,
         errorMessage: 'Failed to fetch: ${e.toString().split('\n').first}',
@@ -189,21 +155,12 @@ class DownloadStateNotifier extends StateNotifier<DownloadState> {
     }
   }
 
-  /// Download the stream (audio or video)
+  /// Download the stream
   Future<void> download(String outputDir, DownloadFormat format) async {
-    if (_yt == null) {
+    if (_currentUrl == null) {
       state = state.copyWith(
         status: DownloadStatus.error,
-        errorMessage: 'No stream available. Fetch video info first.',
-      );
-      return;
-    }
-    
-    final stream = format == DownloadFormat.audio ? _audioStream : _videoStream;
-    if (stream == null) {
-      state = state.copyWith(
-        status: DownloadStatus.error,
-        errorMessage: 'No ${format.name} stream available for this video.',
+        errorMessage: 'No URL loaded. Fetch video info first.',
       );
       return;
     }
@@ -211,78 +168,116 @@ class DownloadStateNotifier extends StateNotifier<DownloadState> {
     try {
       state = state.copyWith(
         status: DownloadStatus.downloading,
-        progress: 0,
-        downloadedBytes: 0,
-        debugInfo: 'Preparing ${format.name} download...',
+        progress: 0.5,
+        debugInfo: 'Downloading and converting audio...',
       );
 
-      // Ensure output directory exists
-      final dir = Directory(outputDir);
-      if (!await dir.exists()) {
-        await dir.create(recursive: true);
+      final result = await _downloadService.downloadAudio(
+        url: _currentUrl!,
+        outputDir: outputDir,
+      );
+
+      if (!result.success || result.filePath == null) {
+        state = state.copyWith(
+          status: DownloadStatus.error,
+          errorMessage: result.error ?? 'Download failed',
+        );
+        return;
       }
 
-      // Prepare file name
-      final title = _currentVideo?.title ?? 'media';
-      final safeTitle = title
-          .replaceAll(RegExp(r'[<>:"/\\|?*]'), '_')
-          .replaceAll(RegExp(r'\s+'), ' ')
-          .trim();
-      final extension = format == DownloadFormat.audio 
-          ? (_audioStream?.container.name ?? 'mp3')
-          : (_videoStream?.container.name ?? 'mp4');
-      final outputPath = '$outputDir/$safeTitle.$extension';
+      // Check filters before inserting into the database!
+      final filterSettings = _ref.read(filterSettingsProvider);
+      final pipeline = FilterPipeline(geminiService: _geminiService);
 
-      debugPrint('[YT] Output: $outputPath');
-      state = state.copyWith(debugInfo: 'Starting ${format.name} download...');
+      final tempSong = {
+        'title': result.title ?? 'Unknown',
+        'artist': result.artist ?? 'Unknown Artist',
+        'bitrate': 256,
+        'duration': (result.durationSeconds ?? 0) * 1000,
+        'fileSize': result.fileSize ?? 0,
+      };
 
-      // Open file for writing
-      final file = File(outputPath);
-      final fileStream = file.openWrite();
+      // Quality check
+      if (!pipeline.passQualityFilter(tempSong, settings: filterSettings)) {
+        _deleteFile(result.filePath!);
+        state = state.copyWith(
+          status: DownloadStatus.error,
+          errorMessage: 'Download blocked: File does not meet quality requirements.',
+        );
+        return;
+      }
 
-      // Get the stream
-      final totalBytes = format == DownloadFormat.audio 
-          ? _audioStream!.size.totalBytes 
-          : _videoStream!.size.totalBytes;
-      var downloadedBytes = 0;
+      // Blacklist check
+      if (pipeline.isBlacklisted(tempSong, settings: filterSettings)) {
+        _deleteFile(result.filePath!);
+        state = state.copyWith(
+          status: DownloadStatus.error,
+          errorMessage: 'Download blocked: Contains blacklisted content.',
+        );
+        return;
+      }
 
-      // Get the actual stream using the library's stream client
-      final dataStream = format == DownloadFormat.audio
-          ? _yt!.videos.streamsClient.get(_audioStream!)
-          : _yt!.videos.streamsClient.get(_videoStream!);
+      // Duplicate check
+      final existingSongs = await _database.getAllSongs();
+      final duplicateList = pipeline.filterDuplicates([tempSong]);
+      final isDuplicate = duplicateList.isEmpty || 
+          existingSongs.any((s) => pipeline.normalizeString(s.title) == pipeline.normalizeString(result.title ?? '') && (s.duration / 1000.0 - (result.durationSeconds ?? 0)).abs() <= 5.0);
+      if (isDuplicate) {
+        _deleteFile(result.filePath!);
+        state = state.copyWith(
+          status: DownloadStatus.error,
+          errorMessage: 'Download blocked: This song is already in your library.',
+        );
+        return;
+      }
 
-      // Pipe with progress tracking
-      await for (final chunk in dataStream) {
-        fileStream.add(chunk);
-        downloadedBytes += chunk.length;
-
-        final progress = totalBytes > 0 ? downloadedBytes / totalBytes : 0.0;
-        
-        // Update progress (throttle to avoid too many rebuilds)
-        if (downloadedBytes % (1024 * 100) == 0 || progress >= 1.0) {
+      // AI Gemini filter check (if enabled and key present)
+      if (filterSettings.blockDevotional || filterSettings.blockKaraoke) {
+        final passedAI = await pipeline.passGeminiFilter(tempSong);
+        if (!passedAI) {
+          _deleteFile(result.filePath!);
           state = state.copyWith(
-            progress: progress,
-            downloadedBytes: downloadedBytes,
-            debugInfo: '${(downloadedBytes / 1024 / 1024).toStringAsFixed(1)} / ${(totalBytes / 1024 / 1024).toStringAsFixed(1)} MB',
+            status: DownloadStatus.error,
+            errorMessage: 'Download blocked: Flagged by AI content filter.',
           );
+          return;
         }
       }
 
-      // Flush and close
-      await fileStream.flush();
-      await fileStream.close();
+      // If all filters pass, classify mood/category using Gemini
+      String mood = 'unknown';
+      if (_geminiService != null) {
+        mood = await _geminiService!.classifyMood(result.title ?? 'Unknown', result.artist);
+      }
 
-      debugPrint('[YT] Download complete: $outputPath');
+      // Save to database
+      final detectedPlatform = UrlDetector.detect(_currentUrl!);
+      final platformString = detectedPlatform.name;
+
+      await _database.upsertSong(
+        SongsCompanion.insert(
+          filePath: result.filePath!,
+          title: result.title ?? 'Unknown',
+          artist: Value(result.artist ?? 'Unknown Artist'),
+          album: const Value('Downloaded Album'),
+          duration: Value((result.durationSeconds ?? 0) * 1000),
+          fileSize: Value(result.fileSize ?? 0),
+          sourcePlatform: Value(platformString),
+          bitrate: const Value(256),
+          mood: Value(mood),
+        ),
+      );
+
+      // Refresh local music library
+      _ref.read(libraryProvider.notifier).loadLibrary();
 
       state = state.copyWith(
         status: DownloadStatus.complete,
         progress: 1.0,
-        outputPath: outputPath,
-        debugInfo: 'Download complete!',
+        outputPath: result.filePath,
+        debugInfo: 'Download complete and verified!',
       );
-    } catch (e, stack) {
-      debugPrint('[YT] Download error: $e');
-      debugPrint('[YT] Stack: $stack');
+    } catch (e) {
       state = state.copyWith(
         status: DownloadStatus.error,
         errorMessage: 'Download failed: ${e.toString().split('\n').first}',
@@ -290,18 +285,18 @@ class DownloadStateNotifier extends StateNotifier<DownloadState> {
     }
   }
 
-  void reset() {
-    _currentVideo = null;
-    _manifest = null;
-    _audioStream = null;
-    _videoStream = null;
-    state = const DownloadState();
+  void _deleteFile(String path) {
+    try {
+      final file = File(path);
+      if (file.existsSync()) {
+        file.deleteSync();
+      }
+    } catch (_) {}
   }
 
-  @override
-  void dispose() {
-    _yt?.close();
-    super.dispose();
+  void reset() {
+    _currentUrl = null;
+    state = const DownloadState();
   }
 }
 

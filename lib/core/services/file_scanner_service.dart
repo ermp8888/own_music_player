@@ -6,6 +6,9 @@ import 'package:path_provider/path_provider.dart';
 import '../database/app_database.dart';
 import '../utils/platform_utils.dart';
 import 'package:drift/drift.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'filter_pipeline.dart';
+import '../constants/app_constants.dart';
 
 /// Service for scanning local music files
 class FileScannerService {
@@ -199,19 +202,21 @@ class FileScannerService {
               
               final title = _extractTitleFromPath(entity.path);
 
-              final id = await _database.upsertSong(
-                SongsCompanion.insert(
-                  filePath: entity.path,
-                  title: title,
-                  artist: const Value('Unknown Artist'),
-                  album: const Value('Unknown Album'),
-                  duration: const Value(0),
-                  fileSize: Value(stat.size),
-                ),
-              );
-              final savedSong = await _database.getSongById(id);
-              if (savedSong != null) {
-                savedSongs.add(savedSong);
+              if (await _shouldImport(title, stat.size)) {
+                final id = await _database.upsertSong(
+                  SongsCompanion.insert(
+                    filePath: entity.path,
+                    title: title,
+                    artist: const Value('Unknown Artist'),
+                    album: const Value('Unknown Album'),
+                    duration: const Value(0),
+                    fileSize: Value(stat.size),
+                  ),
+                );
+                final savedSong = await _database.getSongById(id);
+                if (savedSong != null) {
+                  savedSongs.add(savedSong);
+                }
               }
             } catch (e) {
               // Skip files we can't read
@@ -237,19 +242,21 @@ class FileScannerService {
               final stat = await entity.stat();
               final title = _extractTitleFromPath(entity.path);
 
-              final id = await _database.upsertSong(
-                SongsCompanion.insert(
-                  filePath: entity.path,
-                  title: title,
-                  artist: const Value('Unknown Artist'),
-                  album: const Value('Unknown Album'),
-                  duration: const Value(0),
-                  fileSize: Value(stat.size),
-                ),
-              );
-              final savedSong = await _database.getSongById(id);
-              if (savedSong != null) {
-                savedSongs.add(savedSong);
+              if (await _shouldImport(title, stat.size)) {
+                final id = await _database.upsertSong(
+                  SongsCompanion.insert(
+                    filePath: entity.path,
+                    title: title,
+                    artist: const Value('Unknown Artist'),
+                    album: const Value('Unknown Album'),
+                    duration: const Value(0),
+                    fileSize: Value(stat.size),
+                  ),
+                );
+                final savedSong = await _database.getSongById(id);
+                if (savedSong != null) {
+                  savedSongs.add(savedSong);
+                }
               }
             } catch (e) {
               // Skip files we can't read
@@ -308,19 +315,21 @@ class FileScannerService {
                     final stat = await entity.stat();
                     final title = _extractTitleFromPath(entity.path);
 
-                    final id = await _database.upsertSong(
-                      SongsCompanion.insert(
-                        filePath: entity.path,
-                        title: title,
-                        artist: const Value('Unknown Artist'),
-                        album: const Value('Unknown Album'),
-                        duration: const Value(0),
-                        fileSize: Value(stat.size),
-                      ),
-                    );
-                    final savedSong = await _database.getSongById(id);
-                    if (savedSong != null) {
-                      newSongs.add(savedSong);
+                    if (await _shouldImport(title, stat.size)) {
+                      final id = await _database.upsertSong(
+                        SongsCompanion.insert(
+                          filePath: entity.path,
+                          title: title,
+                          artist: const Value('Unknown Artist'),
+                          album: const Value('Unknown Album'),
+                          duration: const Value(0),
+                          fileSize: Value(stat.size),
+                        ),
+                      );
+                      final savedSong = await _database.getSongById(id);
+                      if (savedSong != null) {
+                        newSongs.add(savedSong);
+                      }
                     }
                   } catch (e) {
                     // Skip files we can't read
@@ -360,4 +369,49 @@ class FileScannerService {
     final nameWithoutExt = fileName.split('.').first;
     return nameWithoutExt.replaceAll('_', ' ').replaceAll('-', ' ');
   }
+
+  Future<FilterSettings> _loadFilterSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return FilterSettings(
+        blockDevotional: prefs.getBool(AppConstants.filterDevotionalKey) ?? true,
+        blockKaraoke: prefs.getBool(AppConstants.filterKaraokeKey) ?? true,
+        blockRemixes: prefs.getBool(AppConstants.filterRemixesKey) ?? false,
+        blockInstrumentals: prefs.getBool(AppConstants.filterInstrumentalsKey) ?? false,
+        blockShorts: prefs.getBool(AppConstants.filterShortsKey) ?? true,
+      );
+    } catch (_) {
+      return const FilterSettings();
+    }
+  }
+
+  Future<bool> _shouldImport(String title, int size) async {
+    final settings = await _loadFilterSettings();
+    final pipeline = FilterPipeline();
+    final tempSong = TempSongForScanner(
+      title: title,
+      artist: 'Unknown Artist',
+      bitrate: 256,
+      duration: 0,
+      fileSize: size,
+    );
+    return pipeline.passQualityFilter(tempSong, settings: settings) &&
+        !pipeline.isBlacklisted(tempSong, settings: settings);
+  }
+}
+
+class TempSongForScanner {
+  final String title;
+  final String artist;
+  final int bitrate;
+  final int duration;
+  final int fileSize;
+
+  TempSongForScanner({
+    required this.title,
+    required this.artist,
+    required this.bitrate,
+    required this.duration,
+    required this.fileSize,
+  });
 }

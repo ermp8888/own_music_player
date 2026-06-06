@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
@@ -18,6 +19,9 @@ final sharedUrlProvider = StateProvider<String?>((ref) => null);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load .env file for API keys
+  await dotenv.load(fileName: '.env');
 
   // Initialize database
   final database = AppDatabase();

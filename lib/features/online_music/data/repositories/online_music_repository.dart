@@ -102,6 +102,8 @@ class OnlineMusicRepository {
         playCount: 0,
         dateAdded: DateTime.now(),
         isFavorite: false,
+        bitrate: 0,
+        isReported: false,
       );
     } catch (e) {
       return null;
