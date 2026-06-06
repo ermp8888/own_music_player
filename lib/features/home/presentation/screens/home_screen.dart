@@ -85,15 +85,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               BottomNavBar(
                 currentIndex: _currentNavIndex,
                 onTap: (index) {
-                  if (index == 2) {
-                    // Library tab - navigate to LibraryScreen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LibraryScreen()),
-                    );
-                  } else {
-                    setState(() => _currentNavIndex = index);
-                  }
+                  setState(() => _currentNavIndex = index);
                 },
               ),
             ],
@@ -109,6 +101,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return _HomeContent();
       case 1:
         return const OnlineMusicScreen();
+      case 2:
+        return const LibraryScreen(isTab: true);
       case 3:
         return _SettingsPage();
       default:

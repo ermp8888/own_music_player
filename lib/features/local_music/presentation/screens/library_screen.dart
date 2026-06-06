@@ -13,7 +13,8 @@ import '../../../../shared/widgets/song_actions_sheet.dart';
 
 /// Library screen showing all local songs with search
 class LibraryScreen extends ConsumerStatefulWidget {
-  const LibraryScreen({super.key});
+  final bool isTab;
+  const LibraryScreen({super.key, this.isTab = false});
 
   @override
   ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
@@ -63,20 +64,21 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 child: Row(
                   children: [
-                    IconButton(
-                      onPressed: () {
-                        if (_isSearching) {
-                          setState(() {
-                            _isSearching = false;
-                            _searchQuery = '';
-                            _searchController.clear();
-                          });
-                        } else {
-                          Navigator.pop(context);
-                        }
-                      },
-                      icon: Icon(_isSearching ? Icons.close : Icons.arrow_back_rounded),
-                    ),
+                    if (!widget.isTab || _isSearching)
+                      IconButton(
+                        onPressed: () {
+                          if (_isSearching) {
+                            setState(() {
+                              _isSearching = false;
+                              _searchQuery = '';
+                              _searchController.clear();
+                            });
+                          } else {
+                            Navigator.pop(context);
+                          }
+                        },
+                        icon: Icon(_isSearching ? Icons.close : Icons.arrow_back_rounded),
+                      ),
                     Expanded(
                       child: _isSearching
                           ? TextField(
@@ -250,7 +252,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               ),
 
               // Mini player
-              const MiniPlayer(),
+              if (!widget.isTab) const MiniPlayer(),
             ],
           ),
         ),
