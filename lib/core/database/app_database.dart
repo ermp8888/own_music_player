@@ -15,7 +15,7 @@ part 'app_database.g.dart';
 /// Main database class using Drift
 @DriftDatabase(tables: [Songs, Playlists, PlaylistSongs])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
   int get schemaVersion => AppConstants.databaseVersion;
