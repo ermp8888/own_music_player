@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/theme_constants.dart';
+import '../../core/theme/app_theme.dart';
 
 /// Bottom navigation bar for the main app
 class BottomNavBar extends StatelessWidget {
@@ -15,11 +15,11 @@ class BottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: ThemeConstants.surfaceColor,
+      decoration: const BoxDecoration(
+        color: AppTheme.backgroundSurface,
         border: Border(
           top: BorderSide(
-            color: ThemeConstants.glassBorderColor,
+            color: AppTheme.divider,
             width: 0.5,
           ),
         ),
@@ -57,8 +57,8 @@ class BottomNavBar extends StatelessWidget {
             Icon(
               icon,
               color: isSelected
-                  ? ThemeConstants.primaryColor
-                  : ThemeConstants.textMuted,
+                  ? AppTheme.primaryAccent
+                  : AppTheme.textSecondary,
               size: 24,
             ),
             const SizedBox(height: 4),
@@ -68,8 +68,8 @@ class BottomNavBar extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 color: isSelected
-                    ? ThemeConstants.primaryColor
-                    : ThemeConstants.textMuted,
+                    ? AppTheme.primaryAccent
+                    : AppTheme.textSecondary,
               ),
             ),
           ],

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/helpers/greeting_helper.dart';
 import '../../../../core/helpers/avatar_color_helper.dart';
+import '../../../../core/utils/metadata_cleaner.dart';
 import '../../../../shared/widgets/gradient_background.dart';
 import '../../../../shared/widgets/bottom_nav_bar.dart';
 import '../../../local_music/presentation/providers/library_provider.dart';
@@ -201,7 +201,7 @@ class _HomeContent extends ConsumerWidget {
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: ThemeConstants.textPrimary,
+                    color: AppTheme.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -209,7 +209,7 @@ class _HomeContent extends ConsumerWidget {
                   'Your personal music hub',
                   style: TextStyle(
                     fontSize: 12,
-                    color: ThemeConstants.textSecondary,
+                    color: AppTheme.textSecondary,
                   ),
                 ),
               ],
@@ -224,7 +224,7 @@ class _HomeContent extends ConsumerWidget {
               );
             },
             icon: const Icon(Icons.search_rounded),
-            color: ThemeConstants.textPrimary,
+            color: AppTheme.textPrimary,
           ),
         ],
       ),
@@ -244,8 +244,12 @@ class _HomeContent extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: ThemeConstants.youtubeImportGradient,
-            borderRadius: BorderRadius.circular(ThemeConstants.radiusLarge),
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFF3E3E), Color(0xFF9E0000)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(AppTheme.cardRadius),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,7 +274,7 @@ class _HomeContent extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: ThemeConstants.primaryColor,
+                      color: AppTheme.primaryAccent,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Text(
@@ -309,7 +313,7 @@ class _HomeContent extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+                  borderRadius: BorderRadius.circular(AppTheme.buttonRadius),
                 ),
                 child: const Center(
                   child: Text(
@@ -340,16 +344,16 @@ class _HomeContent extends ConsumerWidget {
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: ThemeConstants.textPrimary,
+              color: AppTheme.textPrimary,
             ),
           ),
           GestureDetector(
             onTap: onSeeAll,
-            child: Text(
+            child: const Text(
               'See all',
               style: TextStyle(
                 fontSize: 14,
-                color: ThemeConstants.primaryColor,
+                color: AppTheme.primaryAccent,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -371,18 +375,18 @@ class _HomeContent extends ConsumerWidget {
         child: Container(
           height: 100,
           decoration: BoxDecoration(
-            color: ThemeConstants.cardColor,
-            borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+            color: AppTheme.backgroundCard,
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: Center(
+          child: const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.music_note_rounded, color: ThemeConstants.textMuted, size: 32),
-                const SizedBox(height: 8),
+                Icon(Icons.music_note_rounded, color: AppTheme.textSecondary, size: 32),
+                SizedBox(height: 8),
                 Text(
                   'No songs yet. Scan your library!',
-                  style: TextStyle(color: ThemeConstants.textMuted, fontSize: 13),
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                 ),
               ],
             ),
@@ -421,7 +425,9 @@ class _HomeContent extends ConsumerWidget {
                       height: 130,
                       decoration: BoxDecoration(
                         gradient: _getAlbumGradient(index),
-                        borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+                        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+                        border: Border.all(color: Colors.white.withOpacity(0.08)),
+                        boxShadow: AppTheme.cardShadow,
                       ),
                       child: Stack(
                         alignment: Alignment.center,
@@ -446,19 +452,19 @@ class _HomeContent extends ConsumerWidget {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      song.title,
+                      MetadataCleaner.cleanTitle(song.title),
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
-                        color: ThemeConstants.textPrimary,
+                        color: AppTheme.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      song.artist,
-                      style: TextStyle(
-                        color: ThemeConstants.textMuted,
+                      MetadataCleaner.cleanArtist(song.artist),
+                      style: const TextStyle(
+                        color: AppTheme.textSecondary,
                         fontSize: 11,
                       ),
                       maxLines: 1,
@@ -476,17 +482,17 @@ class _HomeContent extends ConsumerWidget {
 
   LinearGradient _getAlbumGradient(int index) {
     final gradients = [
-      ThemeConstants.tealGradient,
+      const LinearGradient(colors: [AppTheme.primaryAccent, AppTheme.secondaryAccent]),
       const LinearGradient(colors: [AppTheme.orangeAccent, AppTheme.orangeAccentLight]),
-      ThemeConstants.cardGradient,
-      ThemeConstants.primaryGradient,
+      const LinearGradient(colors: [AppTheme.backgroundCard, AppTheme.backgroundSurface]),
+      const LinearGradient(colors: [AppTheme.primaryAccent, AppTheme.primaryAccentLight]),
     ];
     return gradients[index % gradients.length];
   }
 
   Widget _buildJumpBackInSection(BuildContext context, WidgetRef ref) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -495,56 +501,69 @@ class _HomeContent extends ConsumerWidget {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: ThemeConstants.textPrimary,
+              color: AppTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 16),
-          // Use Row with Expanded for equal sizing
-          Row(
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 2.2,
             children: [
-              Expanded(
-                child: _buildQuickAccessButton(
-                  context,
-                  icon: Icons.favorite_rounded,
-                  label: 'Liked Songs',
-                  color: AppTheme.purpleAccent,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LikedSongsScreen()),
-                    );
-                  },
-                ),
+              _buildQuickAccessButton(
+                context,
+                icon: Icons.favorite_rounded,
+                label: 'Liked Songs',
+                color: AppTheme.purpleAccent,
+                gradientColors: [AppTheme.purpleAccent, AppTheme.purpleAccentLight],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LikedSongsScreen()),
+                  );
+                },
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildQuickAccessButton(
-                  context,
-                  icon: Icons.playlist_play_rounded,
-                  label: 'Playlists',
-                  color: ThemeConstants.primaryColor,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const PlaylistsScreen()),
-                    );
-                  },
-                ),
+              _buildQuickAccessButton(
+                context,
+                icon: Icons.download_rounded,
+                label: 'Downloads',
+                color: AppTheme.redAccent,
+                gradientColors: [AppTheme.redAccent, AppTheme.redAccentLight],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const DownloadsScreen()),
+                  );
+                },
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildQuickAccessButton(
-                  context,
-                  icon: Icons.download_rounded,
-                  label: 'Downloads',
-                  color: Colors.red,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DownloadsScreen()),
-                    );
-                  },
-                ),
+              _buildQuickAccessButton(
+                context,
+                icon: Icons.playlist_play_rounded,
+                label: 'Playlists',
+                color: AppTheme.greenAccent,
+                gradientColors: [AppTheme.greenAccent, AppTheme.greenAccentLight],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PlaylistsScreen()),
+                  );
+                },
+              ),
+              _buildQuickAccessButton(
+                context,
+                icon: Icons.settings_rounded,
+                label: 'Settings',
+                color: AppTheme.blueAccent,
+                gradientColors: [AppTheme.blueAccent, AppTheme.blueAccentLight],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                  );
+                },
               ),
             ],
           ),
@@ -558,40 +577,55 @@ class _HomeContent extends ConsumerWidget {
     required IconData icon,
     required String label,
     required Color color,
+    required List<Color> gradientColors,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 80,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: ThemeConstants.cardColor,
-          borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+          color: AppTheme.backgroundCard,
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          border: Border.all(color: AppTheme.divider.withOpacity(0.5)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.2),
+                gradient: LinearGradient(
+                  colors: gradientColors,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                color: color,
+                color: Colors.white,
                 size: 20,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                color: ThemeConstants.textPrimary,
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/theme_constants.dart';
+import '../../core/theme/app_theme.dart';
 
 /// Gradient background widget
 class GradientBackground extends StatelessWidget {
@@ -18,7 +18,11 @@ class GradientBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        gradient: gradient ?? ThemeConstants.backgroundGradient,
+        gradient: gradient ?? const LinearGradient(
+          colors: [AppTheme.backgroundPrimary, AppTheme.backgroundSurface],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
       ),
       child: Stack(
         children: [
@@ -29,11 +33,11 @@ class GradientBackground extends StatelessWidget {
             child: Container(
               width: 300,
               height: 300,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    ThemeConstants.primaryColor.withValues(alpha: 0.2),
+                    Color(0x336C63FF), // primaryAccent with 20% opacity (0x33)
                     Colors.transparent,
                   ],
                 ),
@@ -46,11 +50,11 @@ class GradientBackground extends StatelessWidget {
             child: Container(
               width: 200,
               height: 200,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    ThemeConstants.accentColor.withValues(alpha: 0.15),
+                    Color(0x2600D4AA), // secondaryAccent with 15% opacity (0x26)
                     Colors.transparent,
                   ],
                 ),

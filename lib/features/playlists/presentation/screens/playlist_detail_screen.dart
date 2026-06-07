@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/gradient_background.dart';
 import '../../../local_music/presentation/providers/library_provider.dart';
@@ -38,13 +37,13 @@ class PlaylistDetailScreen extends ConsumerWidget {
                   if (pl == null) {
                     return const Padding(
                       padding: EdgeInsets.all(16),
-                      child: Text('Playlist not found'),
+                      child: Text('Playlist not found', style: TextStyle(color: AppTheme.textPrimary)),
                     );
                   }
                   return _buildHeader(context, ref, pl, songs);
                 },
                 loading: () => const LinearProgressIndicator(),
-                error: (_, __) => const Text('Error loading playlist'),
+                error: (_, __) => const Text('Error loading playlist', style: TextStyle(color: AppTheme.warning)),
               ),
 
               // Song list
@@ -91,11 +90,11 @@ class PlaylistDetailScreen extends ConsumerWidget {
                               ? null
                               : ReorderableDragStartListener(
                                   index: index,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8),
+                                  child: const Padding(
+                                    padding: EdgeInsets.all(8),
                                     child: Icon(
                                       Icons.drag_handle_rounded,
-                                      color: ThemeConstants.textMuted,
+                                      color: AppTheme.textSecondary,
                                     ),
                                   ),
                                 ),
@@ -112,7 +111,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                   },
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
-                  error: (_, __) => const Center(child: Text('Error')),
+                  error: (_, __) => const Center(child: Text('Error', style: TextStyle(color: AppTheme.warning))),
                 ),
               ),
 
@@ -139,13 +138,13 @@ class PlaylistDetailScreen extends ConsumerWidget {
             children: [
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back_rounded),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
               ),
               const Spacer(),
               if (!isSmartPlaylist)
                 IconButton(
                   onPressed: () => _showAddSongsDialog(context, ref),
-                  icon: const Icon(Icons.add_rounded),
+                  icon: const Icon(Icons.add_rounded, color: Colors.white),
                 ),
             ],
           ),
@@ -155,12 +154,20 @@ class PlaylistDetailScreen extends ConsumerWidget {
             height: 120,
             decoration: BoxDecoration(
               gradient: isSmartPlaylist
-                  ? ThemeConstants.primaryGradient
+                  ? const LinearGradient(
+                      colors: [AppTheme.primaryAccent, AppTheme.secondaryAccent],
+                    )
                   : const LinearGradient(
                       colors: [AppTheme.greenAccent, AppTheme.greenAccentLight],
                     ),
               borderRadius: BorderRadius.circular(24),
-              boxShadow: ThemeConstants.glowShadow,
+              boxShadow: [
+                BoxShadow(
+                  color: (isSmartPlaylist ? AppTheme.primaryAccent : AppTheme.greenAccent).withOpacity(0.3),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
             child: Icon(
               isSmartPlaylist
@@ -175,16 +182,18 @@ class PlaylistDetailScreen extends ConsumerWidget {
           const SizedBox(height: 20),
           Text(
             playlist.name,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: const TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
           songs.when(
             data: (songList) => Text(
               '${songList.length} songs',
-              style: TextStyle(
-                color: ThemeConstants.textSecondary,
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
                 fontSize: 14,
               ),
             ),
@@ -205,6 +214,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                 icon: const Icon(Icons.play_arrow_rounded),
                 label: const Text('Play All'),
                 style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryAccent,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 ),
@@ -223,22 +233,29 @@ class PlaylistDetailScreen extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.music_off_rounded,
             size: 64,
-            color: ThemeConstants.textMuted,
+            color: AppTheme.textSecondary,
           ),
           const SizedBox(height: 16),
           Text(
             isSmartPlaylist ? 'No songs yet' : 'Playlist is empty',
-            style: Theme.of(context).textTheme.titleMedium,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimary,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             isSmartPlaylist
                 ? 'Start playing some music!'
                 : 'Add songs to this playlist',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppTheme.textSecondary,
+            ),
           ),
         ],
       ),
@@ -248,14 +265,18 @@ class PlaylistDetailScreen extends ConsumerWidget {
   void _showSongOptions(BuildContext context, WidgetRef ref, dynamic song) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: AppTheme.backgroundPrimary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.remove_circle_outline, color: Colors.red),
-              title: const Text('Remove from playlist'),
+              leading: const Icon(Icons.remove_circle_outline, color: AppTheme.warning),
+              title: const Text('Remove from playlist', style: TextStyle(color: AppTheme.warning)),
               onTap: () async {
                 Navigator.pop(context);
                 await ref
@@ -286,9 +307,9 @@ class PlaylistDetailScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: ThemeConstants.backgroundColor,
+      backgroundColor: AppTheme.backgroundPrimary,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
@@ -313,7 +334,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                 height: 4,
                 margin: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: ThemeConstants.textMuted,
+                  color: AppTheme.textSecondary.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -328,9 +349,13 @@ class PlaylistDetailScreen extends ConsumerWidget {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
                       ),
                     ),
                     ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryAccent,
+                      ),
                       onPressed: selectedSongIds.isEmpty
                           ? null
                           : () async {
@@ -353,20 +378,21 @@ class PlaylistDetailScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              const Divider(),
+              const Divider(color: AppTheme.divider),
               // Search box
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: TextField(
+                  style: const TextStyle(color: AppTheme.textPrimary),
                   decoration: InputDecoration(
                     hintText: 'Search songs...',
-                    prefixIcon: const Icon(Icons.search),
+                    prefixIcon: const Icon(Icons.search, color: AppTheme.textSecondary),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor: ThemeConstants.cardColor,
+                    fillColor: AppTheme.backgroundCard,
                     contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   onChanged: (value) => setModalState(() => searchQuery = value),
@@ -380,7 +406,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                           searchQuery.isEmpty
                               ? 'No songs available'
                               : 'No songs found',
-                          style: TextStyle(color: ThemeConstants.textMuted),
+                          style: const TextStyle(color: AppTheme.textSecondary),
                         ),
                       )
                     : ListView.builder(
@@ -395,29 +421,33 @@ class PlaylistDetailScreen extends ConsumerWidget {
                               width: 48,
                               height: 48,
                               decoration: BoxDecoration(
-                                gradient: ThemeConstants.cardGradient,
+                                gradient: const LinearGradient(
+                                  colors: [AppTheme.primaryAccent, AppTheme.secondaryAccent],
+                                ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Icon(
+                              child: const Icon(
                                 Icons.music_note_rounded,
-                                color: ThemeConstants.textMuted,
+                                color: Colors.white70,
                               ),
                             ),
                             title: Text(
                               song.title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: AppTheme.textPrimary),
                             ),
                             subtitle: Text(
                               song.artist,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: ThemeConstants.textMuted,
+                              style: const TextStyle(
+                                color: AppTheme.textSecondary,
                               ),
                             ),
                             trailing: Checkbox(
                               value: isSelected,
+                              activeColor: AppTheme.primaryAccent,
                               onChanged: (value) {
                                 setModalState(() {
                                   if (value == true) {

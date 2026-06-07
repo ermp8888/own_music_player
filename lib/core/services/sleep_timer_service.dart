@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/app_constants.dart';
+import '../theme/app_theme.dart';
 import '../../features/player/presentation/providers/player_provider.dart';
 
 /// Sleep timer state
@@ -134,8 +135,12 @@ void showSleepTimerSheet(BuildContext context, WidgetRef ref) {
 
   showModalBottomSheet(
     context: context,
+    backgroundColor: AppTheme.backgroundPrimary,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
     builder: (context) => Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,24 +152,31 @@ void showSleepTimerSheet(BuildContext context, WidgetRef ref) {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
               ),
             ),
           ),
           if (timerState.isActive)
             ListTile(
-              leading: const Icon(Icons.timer_off_rounded, color: Colors.red),
-              title: Text('Cancel Timer (${timerState.remainingLabel} left)'),
+              leading: const Icon(Icons.timer_off_rounded, color: AppTheme.warning),
+              title: Text(
+                'Cancel Timer (${timerState.remainingLabel} left)',
+                style: const TextStyle(color: AppTheme.textPrimary),
+              ),
               onTap: () {
                 notifier.cancel();
                 Navigator.pop(context);
               },
             ),
           ...sleepTimerOptions.map((minutes) => ListTile(
-                leading: const Icon(Icons.timer_rounded),
-                title: Text('$minutes minutes'),
+                leading: const Icon(Icons.timer_rounded, color: AppTheme.textSecondary),
+                title: Text(
+                  '$minutes minutes',
+                  style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500),
+                ),
                 trailing: timerState.isActive &&
                         timerState.total.inMinutes == minutes
-                    ? const Icon(Icons.check, color: Colors.green)
+                    ? const Icon(Icons.check_circle_rounded, color: AppTheme.secondaryAccent)
                     : null,
                 onTap: () {
                   notifier.start(minutes);

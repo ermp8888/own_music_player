@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/metadata_cleaner.dart';
@@ -30,11 +30,24 @@ class SongTile extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
         decoration: BoxDecoration(
           color: isPlaying
-              ? ThemeConstants.primaryColor.withValues(alpha: 0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+              ? AppTheme.primaryAccent.withOpacity(0.12)
+              : AppTheme.backgroundCard.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(AppTheme.thumbnailRadius),
+          border: Border.all(
+            color: isPlaying
+                ? AppTheme.primaryAccent.withOpacity(0.3)
+                : AppTheme.divider.withOpacity(0.5),
+          ),
+          boxShadow: isPlaying ? [
+            BoxShadow(
+              color: AppTheme.primaryAccent.withOpacity(0.15),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ] : null,
         ),
         child: Row(
           children: [
@@ -43,25 +56,29 @@ class SongTile extends StatelessWidget {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                gradient: isPlaying
-                    ? ThemeConstants.primaryGradient
-                    : ThemeConstants.cardGradient,
-                boxShadow: isPlaying ? ThemeConstants.glowShadow : null,
+                borderRadius: BorderRadius.circular(8),
+                gradient: LinearGradient(
+                  colors: isPlaying
+                      ? [AppTheme.primaryAccent, AppTheme.primaryAccentLight]
+                      : [AppTheme.backgroundCard, AppTheme.backgroundPrimary],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: isPlaying ? AppTheme.activeShadow : null,
               ),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
                   Icon(
                     Icons.music_note_rounded,
-                    color: isPlaying ? Colors.white : ThemeConstants.textMuted,
+                    color: isPlaying ? Colors.white : AppTheme.textSecondary,
                     size: 24,
                   ),
                   if (isPlaying)
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
                         Icons.equalizer_rounded,
@@ -84,8 +101,8 @@ class SongTile extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
                       color: isPlaying
-                          ? ThemeConstants.primaryColor
-                          : ThemeConstants.textPrimary,
+                          ? AppTheme.primaryAccentLight
+                          : AppTheme.textPrimary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -96,8 +113,8 @@ class SongTile extends StatelessWidget {
                       Flexible(
                         child: Text(
                           MetadataCleaner.cleanArtist(song.artist),
-                          style: TextStyle(
-                            color: ThemeConstants.textSecondary,
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
                             fontSize: 13,
                           ),
                           maxLines: 1,
@@ -105,10 +122,10 @@ class SongTile extends StatelessWidget {
                         ),
                       ),
                       if (showDuration && song.duration > 0) ...[
-                        Text(
+                        const Text(
                           ' • ',
                           style: TextStyle(
-                            color: ThemeConstants.textMuted,
+                            color: AppTheme.textSecondary,
                             fontSize: 13,
                           ),
                         ),
@@ -116,8 +133,8 @@ class SongTile extends StatelessWidget {
                           Formatters.formatDuration(
                             Duration(milliseconds: song.duration),
                           ),
-                          style: TextStyle(
-                            color: ThemeConstants.textMuted,
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
                             fontSize: 13,
                           ),
                         ),
@@ -134,7 +151,7 @@ class SongTile extends StatelessWidget {
               IconButton(
                 onPressed: onMoreTap,
                 icon: const Icon(Icons.more_vert_rounded),
-                color: ThemeConstants.textMuted,
+                color: AppTheme.textSecondary,
                 iconSize: 20,
               ),
           ],

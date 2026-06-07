@@ -17,6 +17,9 @@ class AppTheme {
   static const Color textDisabled = Color(0xFF4A4A5A);
   static const Color error = Color(0xFFFF6B6B);
   static const Color success = Color(0xFF4CAF50);
+  static const Color warning = Color(0xFFFFB300);
+  static const Color warningBackground = Color(0xFF1E1B15);
+  static const Color warningBorder = Color(0xFF3A301E);
   static const Color divider = Color(0xFF2A2A3A);
 
   // Additional Color Accent Tokens

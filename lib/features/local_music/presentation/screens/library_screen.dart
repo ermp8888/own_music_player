@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/theme/app_theme.dart';
 
 import '../../../../shared/widgets/gradient_background.dart';
 import '../../../player/presentation/providers/player_provider.dart';
@@ -10,6 +10,8 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../providers/library_provider.dart';
 import '../widgets/song_tile.dart';
 import '../../../../shared/widgets/song_actions_sheet.dart';
+
+enum LibraryFilter { all, local, youtube, liked }
 
 /// Library screen showing all local songs with search
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -26,6 +28,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   bool _isSearching = false;
   late stt.SpeechToText _speech;
   bool _isListening = false;
+  LibraryFilter _selectedFilter = LibraryFilter.all;
 
   @override
   void initState() {
@@ -53,6 +56,22 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 song.artist.toLowerCase().contains(query) ||
                 song.album.toLowerCase().contains(query);
           }).toList();
+
+    // Apply quick filters
+    final displayedSongs = filteredSongs.where((song) {
+      switch (_selectedFilter) {
+        case LibraryFilter.all:
+          return true;
+        case LibraryFilter.local:
+          final pathLower = song.filePath.toLowerCase();
+          return !pathLower.contains('youtube') && !pathLower.contains('mymusicapp') && song.sourcePlatform != 'youtube';
+        case LibraryFilter.youtube:
+          final pathLower = song.filePath.toLowerCase();
+          return pathLower.contains('youtube') || pathLower.contains('mymusicapp') || song.sourcePlatform == 'youtube';
+        case LibraryFilter.liked:
+          return song.isFavorite;
+      }
+    }).toList();
 
     return Scaffold(
       body: GradientBackground(
@@ -87,10 +106,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                               decoration: InputDecoration(
                                 hintText: 'Search songs...',
                                 border: InputBorder.none,
-                                hintStyle: TextStyle(color: ThemeConstants.textMuted),
+                                hintStyle: const TextStyle(color: AppTheme.textSecondary),
                                 suffixIcon: IconButton(
                                   icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
-                                  color: _isListening ? ThemeConstants.primaryColor : ThemeConstants.textMuted,
+                                  color: _isListening ? AppTheme.primaryAccent : AppTheme.textSecondary,
                                   onPressed: _listen,
                                 ),
                               ),
@@ -171,6 +190,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 ),
               ),
 
+              _buildFilterPills(),
+
               // Stats bar
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -178,27 +199,29 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   children: [
                     Text(
                       _searchQuery.isEmpty
-                          ? '${libraryState.songs.length} songs'
-                          : '${filteredSongs.length} results',
-                      style: TextStyle(
-                        color: ThemeConstants.textSecondary,
+                          ? '${displayedSongs.length} songs'
+                          : '${displayedSongs.length} results',
+                      style: const TextStyle(
+                        color: AppTheme.textSecondary,
                         fontSize: 14,
                       ),
                     ),
                     const Spacer(),
                     // Play all button
-                    if (filteredSongs.isNotEmpty)
+                    if (displayedSongs.isNotEmpty)
                       TextButton.icon(
                         onPressed: () {
                           ref.read(playerStateProvider.notifier).playSong(
-                                filteredSongs.first,
-                                queue: filteredSongs,
+                                displayedSongs.first,
+                                queue: displayedSongs,
                               );
                         },
                         icon: Container(
                           padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            gradient: ThemeConstants.primaryGradient,
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [AppTheme.primaryAccent, AppTheme.secondaryAccent],
+                            ),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -219,13 +242,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     ? const Center(child: CircularProgressIndicator())
                     : libraryState.songs.isEmpty
                         ? _buildEmptyState(context, ref)
-                        : filteredSongs.isEmpty
+                        : displayedSongs.isEmpty
                             ? _buildNoResultsState()
                             : ListView.builder(
                                 padding: const EdgeInsets.only(bottom: 100),
-                                itemCount: filteredSongs.length,
+                                itemCount: displayedSongs.length,
                                 itemBuilder: (context, index) {
-                                  final song = filteredSongs[index];
+                                  final song = displayedSongs[index];
                                   final isCurrentSong = currentSong.whenOrNull(
                                         data: (current) => current?.id == song.id,
                                       ) ??
@@ -237,7 +260,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                     onTap: () {
                                       ref.read(playerStateProvider.notifier).playSong(
                                             song,
-                                            queue: filteredSongs,
+                                            queue: displayedSongs,
                                           );
                                     },
                                     onMoreTap: () {
@@ -264,25 +287,26 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+        children: const [
           Icon(
             Icons.search_off_rounded,
             size: 64,
-            color: ThemeConstants.textMuted,
+            color: AppTheme.textSecondary,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             'No songs found',
             style: TextStyle(
-              color: ThemeConstants.textSecondary,
+              color: AppTheme.textPrimary,
               fontSize: 16,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Try a different search term',
             style: TextStyle(
-              color: ThemeConstants.textMuted,
+              color: AppTheme.textSecondary,
               fontSize: 14,
             ),
           ),
@@ -305,25 +329,25 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             icon,
             size: 20,
             color: current == order
-                ? ThemeConstants.primaryColor
-                : ThemeConstants.textSecondary,
+                ? AppTheme.primaryAccent
+                : AppTheme.textSecondary,
           ),
           const SizedBox(width: 12),
           Text(
             label,
             style: TextStyle(
               color: current == order
-                  ? ThemeConstants.primaryColor
-                  : ThemeConstants.textPrimary,
+                  ? AppTheme.primaryAccent
+                  : AppTheme.textPrimary,
               fontWeight: current == order ? FontWeight.w600 : FontWeight.normal,
             ),
           ),
           if (current == order) ...[
             const Spacer(),
-            Icon(
+            const Icon(
               Icons.check_rounded,
               size: 18,
-              color: ThemeConstants.primaryColor,
+              color: AppTheme.primaryAccent,
             ),
           ],
         ],
@@ -338,35 +362,99 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: ThemeConstants.cardColor,
+            decoration: const BoxDecoration(
+              color: AppTheme.backgroundCard,
               shape: BoxShape.circle,
             ),
-            child: Icon(
+            child: const Icon(
               Icons.library_music_rounded,
               size: 64,
-              color: ThemeConstants.textMuted,
+              color: AppTheme.textSecondary,
             ),
           ),
           const SizedBox(height: 24),
-          Text(
+          const Text(
             'No songs found',
-            style: Theme.of(context).textTheme.titleLarge,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimary,
+            ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Scan your device to find music',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.textSecondary,
+            ),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryAccent,
+            ),
             onPressed: () {
               ref.read(libraryProvider.notifier).scanMusic();
             },
-            icon: const Icon(Icons.search),
-            label: const Text('Scan Music'),
+            icon: const Icon(Icons.search, color: Colors.white),
+            label: const Text('Scan Music', style: TextStyle(color: Colors.white)),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFilterPills() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Row(
+        children: LibraryFilter.values.map((filter) {
+          final isActive = _selectedFilter == filter;
+          String label = '';
+          switch (filter) {
+            case LibraryFilter.all:
+              label = 'All';
+              break;
+            case LibraryFilter.local:
+              label = 'Local';
+              break;
+            case LibraryFilter.youtube:
+              label = 'YouTube';
+              break;
+            case LibraryFilter.liked:
+              label = 'Liked';
+              break;
+          }
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _selectedFilter = filter);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isActive ? AppTheme.primaryAccent : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppTheme.chipRadius),
+                  border: Border.all(
+                    color: isActive ? Colors.transparent : AppTheme.divider,
+                  ),
+                  boxShadow: isActive ? AppTheme.activeShadow : null,
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: isActive ? Colors.white : AppTheme.textSecondary,
+                    fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

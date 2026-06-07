@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/constants/theme_constants.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/services/share_service.dart';
 import '../../core/helpers/favorite_helper.dart';
-import '../../features/player/presentation/providers/player_provider.dart';
 import '../../features/local_music/presentation/providers/library_provider.dart';
-import '../../features/playlists/presentation/screens/playlists_screen.dart';
+import '../../features/player/presentation/providers/player_provider.dart';
 import '../../features/playlists/presentation/providers/playlist_provider.dart';
 
 /// Shows a bottom sheet with actions for a given song.
 void showSongActions(BuildContext context, WidgetRef ref, Song song) {
   showModalBottomSheet(
     context: context,
-    backgroundColor: ThemeConstants.cardColor,
+    backgroundColor: AppTheme.backgroundCard,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
@@ -43,7 +42,9 @@ class _SongActionsSheet extends ConsumerWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      gradient: ThemeConstants.tealGradient,
+                      gradient: const LinearGradient(
+                        colors: [AppTheme.primaryAccent, AppTheme.secondaryAccent],
+                      ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
@@ -62,7 +63,7 @@ class _SongActionsSheet extends ConsumerWidget {
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
-                            color: ThemeConstants.textPrimary,
+                            color: AppTheme.textPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -70,7 +71,7 @@ class _SongActionsSheet extends ConsumerWidget {
                         Text(
                           song.artist,
                           style: const TextStyle(
-                            color: ThemeConstants.textSecondary,
+                            color: AppTheme.textSecondary,
                             fontSize: 13,
                           ),
                           maxLines: 1,
@@ -82,7 +83,7 @@ class _SongActionsSheet extends ConsumerWidget {
                 ],
               ),
             ),
-            const Divider(color: ThemeConstants.glassBorderColor),
+            const Divider(color: AppTheme.divider),
 
             // Actions
             _ActionTile(
@@ -134,13 +135,13 @@ class _SongActionsSheet extends ConsumerWidget {
               label: song.isReported
                   ? 'Un-report Song'
                   : 'Report Bad Quality',
-              iconColor: song.isReported ? ThemeConstants.successColor : ThemeConstants.warningColor,
+              iconColor: song.isReported ? AppTheme.success : AppTheme.warning,
               onTap: () async {
                 final db = ref.read(databaseProvider);
                 if (song.isReported) {
-                  await db.unreportSong(song.id);
+                   await db.unreportSong(song.id);
                 } else {
-                  await db.reportSong(song.id);
+                   await db.reportSong(song.id);
                 }
                 if (context.mounted) {
                   Navigator.pop(context);
@@ -179,7 +180,7 @@ class _SongActionsSheet extends ConsumerWidget {
             _ActionTile(
               icon: Icons.delete_outline_rounded,
               label: 'Delete from Library',
-              iconColor: ThemeConstants.errorColor,
+              iconColor: AppTheme.error,
               onTap: () async {
                 Navigator.pop(context);
                 _showDeleteConfirmation(context, ref, song);
@@ -208,11 +209,11 @@ class _ActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: iconColor ?? ThemeConstants.textSecondary),
+      leading: Icon(icon, color: iconColor ?? AppTheme.textSecondary),
       title: Text(
         label,
         style: const TextStyle(
-          color: ThemeConstants.textPrimary,
+          color: AppTheme.textPrimary,
           fontSize: 15,
         ),
       ),
@@ -224,7 +225,7 @@ class _ActionTile extends StatelessWidget {
 void _showAddToPlaylistSheet(BuildContext context, WidgetRef ref, Song song) {
   showModalBottomSheet(
     context: context,
-    backgroundColor: ThemeConstants.backgroundColor,
+    backgroundColor: AppTheme.backgroundPrimary,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
@@ -243,7 +244,7 @@ void _showAddToPlaylistSheet(BuildContext context, WidgetRef ref, Song song) {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: ThemeConstants.textPrimary,
+                    color: AppTheme.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -251,25 +252,25 @@ void _showAddToPlaylistSheet(BuildContext context, WidgetRef ref, Song song) {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: const BoxDecoration(
-                      color: ThemeConstants.primaryColor,
+                      color: AppTheme.primaryAccent,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.add, color: Colors.white, size: 20),
                   ),
-                  title: const Text('Create New Playlist', style: TextStyle(color: ThemeConstants.textPrimary)),
+                  title: const Text('Create New Playlist', style: TextStyle(color: AppTheme.textPrimary)),
                   onTap: () {
                     Navigator.pop(context);
                     _showCreatePlaylistAndAddDialog(context, ref, song);
                   },
                 ),
-                const Divider(color: ThemeConstants.glassBorderColor),
+                const Divider(color: AppTheme.divider),
                 if (playlistsState.userPlaylists.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),
                     child: Center(
                       child: Text(
                         'No playlists yet.',
-                        style: TextStyle(color: ThemeConstants.textMuted),
+                        style: TextStyle(color: AppTheme.textSecondary),
                       ),
                     ),
                   )
@@ -283,14 +284,14 @@ void _showAddToPlaylistSheet(BuildContext context, WidgetRef ref, Song song) {
                           leading: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: ThemeConstants.primaryColor.withValues(alpha: 0.1),
+                              color: AppTheme.primaryAccent.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Icon(Icons.playlist_play_rounded, color: ThemeConstants.primaryColor, size: 24),
+                            child: const Icon(Icons.playlist_play_rounded, color: AppTheme.primaryAccent, size: 24),
                           ),
                           title: Text(
                             playlist.name,
-                            style: const TextStyle(color: ThemeConstants.textPrimary),
+                            style: const TextStyle(color: AppTheme.textPrimary),
                           ),
                           onTap: () async {
                             Navigator.pop(context);
@@ -317,7 +318,7 @@ Future<void> _addSongToSpecificPlaylist(BuildContext context, WidgetRef ref, dyn
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Added "${song.title}" to ${playlist.name}'),
-          backgroundColor: ThemeConstants.successColor,
+          backgroundColor: AppTheme.success,
         ),
       );
     }
@@ -326,7 +327,7 @@ Future<void> _addSongToSpecificPlaylist(BuildContext context, WidgetRef ref, dyn
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to add to playlist: $e'),
-          backgroundColor: ThemeConstants.errorColor,
+          backgroundColor: AppTheme.error,
         ),
       );
     }
@@ -339,15 +340,15 @@ void _showCreatePlaylistAndAddDialog(BuildContext context, WidgetRef ref, Song s
   showDialog(
     context: context,
     builder: (context) => AlertDialog(
-      backgroundColor: ThemeConstants.cardColor,
+      backgroundColor: AppTheme.backgroundCard,
       title: const Text('Create Playlist'),
       content: TextField(
         controller: nameController,
         autofocus: true,
-        style: const TextStyle(color: ThemeConstants.textPrimary),
+        style: const TextStyle(color: AppTheme.textPrimary),
         decoration: const InputDecoration(
           hintText: 'Playlist name',
-          hintStyle: TextStyle(color: ThemeConstants.textMuted),
+          hintStyle: TextStyle(color: AppTheme.textSecondary),
         ),
       ),
       actions: [
@@ -380,7 +381,7 @@ void _showDeleteConfirmation(
   showDialog(
     context: context,
     builder: (context) => AlertDialog(
-      backgroundColor: ThemeConstants.cardColor,
+      backgroundColor: AppTheme.backgroundCard,
       title: const Text('Delete Song'),
       content: Text(
         'Delete "${song.title}" from your library?\n\n'
@@ -405,8 +406,8 @@ void _showDeleteConfirmation(
               );
             }
           },
-          child: Text('Delete',
-              style: TextStyle(color: ThemeConstants.errorColor)),
+          child: const Text('Delete',
+              style: TextStyle(color: AppTheme.error)),
         ),
       ],
     ),
@@ -420,7 +421,7 @@ void _showRenameDialog(BuildContext context, WidgetRef ref, Song song) {
   showDialog(
     context: context,
     builder: (context) => AlertDialog(
-      backgroundColor: ThemeConstants.cardColor,
+      backgroundColor: AppTheme.backgroundCard,
       title: const Text('Rename Song'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -430,7 +431,7 @@ void _showRenameDialog(BuildContext context, WidgetRef ref, Song song) {
             decoration: InputDecoration(
               labelText: 'Title',
               filled: true,
-              fillColor: ThemeConstants.backgroundColor,
+              fillColor: AppTheme.backgroundPrimary,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -443,7 +444,7 @@ void _showRenameDialog(BuildContext context, WidgetRef ref, Song song) {
             decoration: InputDecoration(
               labelText: 'Artist',
               filled: true,
-              fillColor: ThemeConstants.backgroundColor,
+              fillColor: AppTheme.backgroundPrimary,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,

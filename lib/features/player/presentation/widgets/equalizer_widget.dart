@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/equalizer_provider.dart';
 
 /// Interactive Equalizer Widget
@@ -27,8 +27,8 @@ class _EqualizerWidgetState extends ConsumerState<EqualizerWidget> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: ThemeConstants.cardColor,
-        borderRadius: BorderRadius.circular(ThemeConstants.radiusLarge),
+        color: AppTheme.backgroundCard,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
@@ -46,14 +46,14 @@ class _EqualizerWidgetState extends ConsumerState<EqualizerWidget> {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.equalizer_rounded, color: ThemeConstants.primaryColor),
+                  Icon(Icons.equalizer_rounded, color: AppTheme.primaryAccent),
                   SizedBox(width: 12),
                   Text(
                     'Equalizer',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: ThemeConstants.textPrimary,
+                      color: AppTheme.textPrimary,
                     ),
                   ),
                 ],
@@ -61,7 +61,7 @@ class _EqualizerWidgetState extends ConsumerState<EqualizerWidget> {
               Switch(
                 value: eqSettings.enabled,
                 onChanged: (value) => eqNotifier.setEnabled(value),
-                activeColor: ThemeConstants.primaryColor,
+                activeColor: AppTheme.primaryAccent,
               ),
             ],
           ),
@@ -72,16 +72,16 @@ class _EqualizerWidgetState extends ConsumerState<EqualizerWidget> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
-              color: ThemeConstants.backgroundColor,
+              color: AppTheme.backgroundPrimary,
               borderRadius: BorderRadius.circular(12),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: eqSettings.preset,
                 isExpanded: true,
-                dropdownColor: ThemeConstants.cardColor,
-                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: ThemeConstants.textSecondary),
-                style: const TextStyle(color: ThemeConstants.textPrimary, fontSize: 16),
+                dropdownColor: AppTheme.backgroundCard,
+                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.textSecondary),
+                style: const TextStyle(color: AppTheme.textPrimary, fontSize: 16),
                 onChanged: eqSettings.enabled ? (value) {
                   if (value != null) eqNotifier.setPreset(value);
                 } : null,
@@ -122,7 +122,7 @@ class _EqualizerWidgetState extends ConsumerState<EqualizerWidget> {
           '${value > 0 ? '+' : ''}${value.toStringAsFixed(1)}',
           style: TextStyle(
             fontSize: 10,
-            color: eqSettings.enabled ? ThemeConstants.textSecondary : ThemeConstants.textMuted,
+            color: eqSettings.enabled ? AppTheme.textSecondary : AppTheme.textSecondary.withOpacity(0.5),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -136,9 +136,9 @@ class _EqualizerWidgetState extends ConsumerState<EqualizerWidget> {
             child: SliderTheme(
               data: SliderTheme.of(context).copyWith(
                 trackHeight: 4,
-                activeTrackColor: eqSettings.enabled ? ThemeConstants.primaryColor : ThemeConstants.cardColorLight,
-                inactiveTrackColor: ThemeConstants.backgroundColor,
-                thumbColor: eqSettings.enabled ? ThemeConstants.textPrimary : ThemeConstants.textMuted,
+                activeTrackColor: eqSettings.enabled ? AppTheme.primaryAccent : AppTheme.divider,
+                inactiveTrackColor: AppTheme.backgroundPrimary,
+                thumbColor: eqSettings.enabled ? AppTheme.textPrimary : AppTheme.textSecondary.withOpacity(0.5),
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
                 overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
               ),
@@ -161,7 +161,7 @@ class _EqualizerWidgetState extends ConsumerState<EqualizerWidget> {
           _bands[index],
           style: TextStyle(
             fontSize: 12,
-            color: eqSettings.enabled ? ThemeConstants.textPrimary : ThemeConstants.textMuted,
+            color: eqSettings.enabled ? AppTheme.textPrimary : AppTheme.textSecondary.withOpacity(0.5),
             fontWeight: FontWeight.bold,
           ),
         ),

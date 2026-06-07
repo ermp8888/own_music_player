@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../providers/player_provider.dart';
 import '../../../../core/utils/metadata_cleaner.dart';
 import '../screens/player_screen.dart';
@@ -103,8 +103,8 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: ThemeConstants.cardColor,
-                borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+                color: AppTheme.backgroundCard,
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -113,7 +113,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                   positionData.when(
                     data: (data) => ClipRRect(
                       borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(ThemeConstants.radiusMedium),
+                        top: Radius.circular(16),
                       ),
                       child: LinearProgressIndicator(
                         value: data.duration.inMilliseconds > 0
@@ -121,8 +121,8 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                                 data.duration.inMilliseconds
                             : 0,
                         backgroundColor: Colors.transparent,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          ThemeConstants.primaryColor,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppTheme.primaryAccent,
                         ),
                         minHeight: 2,
                       ),
@@ -141,8 +141,10 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                           child: Container(
                             width: 44,
                             height: 44,
-                            decoration: BoxDecoration(
-                              gradient: ThemeConstants.tealGradient,
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [AppTheme.primaryAccent, AppTheme.secondaryAccent],
+                              ),
                             ),
                             child: song.albumArtPath != null && song.albumArtPath!.isNotEmpty
                                 ? (song.albumArtPath!.startsWith('http')
@@ -183,15 +185,15 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
-                                  color: ThemeConstants.textPrimary,
+                                  color: AppTheme.textPrimary,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Text(
                                 MetadataCleaner.cleanArtist(song.artist),
-                                style: TextStyle(
-                                  color: ThemeConstants.primaryColor,
+                                style: const TextStyle(
+                                  color: AppTheme.primaryAccent,
                                   fontSize: 12,
                                 ),
                                 maxLines: 1,
@@ -206,7 +208,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                             // TODO: Show queue
                           },
                           icon: const Icon(Icons.queue_music_rounded),
-                          color: ThemeConstants.textMuted,
+                          color: AppTheme.textSecondary,
                           iconSize: 24,
                         ),
                         // Play/Pause button
@@ -214,8 +216,8 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                           data: (playing) => Container(
                             width: 40,
                             height: 40,
-                            decoration: BoxDecoration(
-                              color: ThemeConstants.primaryColor,
+                            decoration: const BoxDecoration(
+                              color: AppTheme.primaryAccent,
                               shape: BoxShape.circle,
                             ),
                             child: IconButton(

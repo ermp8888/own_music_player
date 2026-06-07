@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
-import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/download_location_provider.dart';
 import '../../../../core/providers/gemini_api_key_provider.dart';
 import '../../../player/presentation/widgets/equalizer_widget.dart';
@@ -85,7 +85,7 @@ class SettingsScreen extends ConsumerWidget {
                     backgroundColor: Colors.transparent,
                     elevation: 0,
                   ),
-                  backgroundColor: ThemeConstants.backgroundColor,
+                  backgroundColor: AppTheme.backgroundPrimary,
                   body: const Padding(
                     padding: EdgeInsets.all(16.0),
                     child: EqualizerWidget(),
@@ -116,11 +116,16 @@ class SettingsScreen extends ConsumerWidget {
           child: Column(
             children: [
               Container(
-                width: 60,
-                height: 60,
+                width: 64,
+                height: 64,
                 decoration: BoxDecoration(
-                  gradient: ThemeConstants.primaryGradient,
+                  gradient: const LinearGradient(
+                    colors: [AppTheme.primaryAccent, AppTheme.primaryAccentLight],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(16),
+                  boxShadow: AppTheme.activeShadow,
                 ),
                 child: const Icon(
                   Icons.music_note_rounded,
@@ -134,15 +139,15 @@ class SettingsScreen extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: ThemeConstants.textPrimary,
+                  color: AppTheme.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
+              const Text(
                 'Version 1.0.0',
                 style: TextStyle(
                   fontSize: 14,
-                  color: ThemeConstants.textMuted,
+                  color: AppTheme.textSecondary,
                 ),
               ),
             ],
@@ -165,17 +170,16 @@ class SettingsScreen extends ConsumerWidget {
     }
     return path;
   }
-
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 12, top: 8),
       child: Text(
-        title,
-        style: TextStyle(
-          color: ThemeConstants.primaryColor,
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
+        title.toUpperCase(),
+        style: const TextStyle(
+          color: AppTheme.primaryAccent,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.2,
         ),
       ),
     );
@@ -189,45 +193,46 @@ class SettingsScreen extends ConsumerWidget {
     Widget? trailing,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: ThemeConstants.cardColor,
-        borderRadius: BorderRadius.circular(12),
+        color: AppTheme.backgroundCard.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppTheme.divider.withOpacity(0.5)),
       ),
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: ThemeConstants.cardColorLight,
-            borderRadius: BorderRadius.circular(8),
+            color: AppTheme.primaryAccent.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(AppTheme.buttonRadius),
           ),
-          child: Icon(icon, color: ThemeConstants.textPrimary, size: 22),
+          child: Icon(icon, color: AppTheme.primaryAccent, size: 22),
         ),
         title: Text(
           title,
           style: const TextStyle(
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
             fontSize: 15,
+            color: AppTheme.textPrimary,
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(
-            color: ThemeConstants.textMuted,
+          style: const TextStyle(
+            color: AppTheme.textSecondary,
             fontSize: 13,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        trailing: trailing ?? Icon(
+        trailing: trailing ?? const Icon(
           Icons.chevron_right_rounded,
-          color: ThemeConstants.textMuted,
+          color: AppTheme.textSecondary,
         ),
         onTap: onTap,
       ),
     );
   }
-
   void _shareApp(BuildContext context) async {
     try {
       // Check if APK exists in Downloads folder
@@ -267,20 +272,24 @@ class SettingsScreen extends ConsumerWidget {
 
     showModalBottomSheet(
       context: context,
+      backgroundColor: AppTheme.backgroundPrimary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
               child: Text(
                 'Choose Download Location',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: ThemeConstants.textPrimary,
+                  color: AppTheme.textPrimary,
                 ),
               ),
             ),
@@ -288,16 +297,16 @@ class SettingsScreen extends ConsumerWidget {
             // Preset locations
             ...locations.map((location) => ListTile(
               leading: Text(location.icon, style: const TextStyle(fontSize: 24)),
-              title: Text(location.name),
+              title: Text(location.name, style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500)),
               subtitle: Text(
                 location.path.replaceAll('/storage/emulated/0/', ''),
-                style: TextStyle(
-                  color: ThemeConstants.textMuted,
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
                   fontSize: 12,
                 ),
               ),
               trailing: currentLocation == location.path
-                  ? Icon(Icons.check_circle, color: ThemeConstants.primaryColor)
+                  ? const Icon(Icons.check_circle_rounded, color: AppTheme.secondaryAccent)
                   : null,
               onTap: () async {
                 await ref.read(downloadLocationProvider.notifier).setLocation(location.path);
@@ -307,15 +316,15 @@ class SettingsScreen extends ConsumerWidget {
                 );
               },
             )),
-            const Divider(),
+            const Divider(color: AppTheme.divider),
             // Browse folder option
             ListTile(
               leading: const Text('📂', style: TextStyle(fontSize: 24)),
-              title: const Text('Browse Folder'),
-              subtitle: Text(
+              title: const Text('Browse Folder', style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500)),
+              subtitle: const Text(
                 'Choose any folder on your device',
                 style: TextStyle(
-                  color: ThemeConstants.textMuted,
+                  color: AppTheme.textSecondary,
                   fontSize: 12,
                 ),
               ),
@@ -355,9 +364,10 @@ class SettingsScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: ThemeConstants.cardColor,
+        backgroundColor: AppTheme.backgroundSurface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          side: const BorderSide(color: AppTheme.divider),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -366,8 +376,13 @@ class SettingsScreen extends ConsumerWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                gradient: ThemeConstants.primaryGradient,
+                gradient: const LinearGradient(
+                  colors: [AppTheme.primaryAccent, AppTheme.primaryAccentLight],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 borderRadius: BorderRadius.circular(20),
+                boxShadow: AppTheme.activeShadow,
               ),
               child: const Icon(
                 Icons.music_note_rounded,
@@ -381,37 +396,37 @@ class SettingsScreen extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: ThemeConstants.textPrimary,
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
-            Text(
+            const Text(
               'Version 1.0.0',
               style: TextStyle(
                 fontSize: 14,
-                color: ThemeConstants.textMuted,
+                color: AppTheme.textSecondary,
               ),
             ),
             const SizedBox(height: 20),
-            Text(
+            const Text(
               'A modern music player app with YouTube downloading capabilities. '
               'Enjoy your favorite music offline with a beautiful dark interface.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: ThemeConstants.textSecondary,
+                color: AppTheme.textSecondary,
                 height: 1.5,
               ),
             ),
             const SizedBox(height: 20),
-            const Divider(),
+            const Divider(color: AppTheme.divider),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               'Features',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: ThemeConstants.textPrimary,
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -421,11 +436,11 @@ class SettingsScreen extends ConsumerWidget {
             _buildFeatureItem(Icons.favorite_rounded, 'Liked songs'),
             _buildFeatureItem(Icons.share_rounded, 'Share music'),
             const SizedBox(height: 20),
-            Text(
+            const Text(
               'Made with ❤️',
               style: TextStyle(
                 fontSize: 12,
-                color: ThemeConstants.textMuted,
+                color: AppTheme.textSecondary,
               ),
             ),
           ],
@@ -445,13 +460,13 @@ class SettingsScreen extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: ThemeConstants.primaryColor),
+          Icon(icon, size: 18, color: AppTheme.primaryAccent),
           const SizedBox(width: 12),
           Text(
             text,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 13,
-              color: ThemeConstants.textSecondary,
+              color: AppTheme.textSecondary,
             ),
           ),
         ],
@@ -467,11 +482,11 @@ class SettingsScreen extends ConsumerWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: ThemeConstants.cardColor,
+          backgroundColor: AppTheme.backgroundSurface,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: ThemeConstants.cardColorLight.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+            side: const BorderSide(
+              color: AppTheme.divider,
               width: 1,
             ),
           ),
@@ -489,23 +504,16 @@ class SettingsScreen extends ConsumerWidget {
               const Text(
                 'Get your key from Google AI Studio. This key is used for classification and mood tagging.',
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: AppTheme.textSecondary,
                   fontSize: 12,
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: controller,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
+                style: const TextStyle(color: AppTheme.textPrimary),
+                decoration: const InputDecoration(
                   hintText: 'Enter API Key',
-                  hintStyle: const TextStyle(color: Colors.white30),
-                  filled: true,
-                  fillColor: ThemeConstants.cardColorLight,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
                 ),
                 obscureText: true,
               ),
@@ -518,7 +526,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: ThemeConstants.primaryColor,
+                backgroundColor: AppTheme.primaryAccent,
               ),
               onPressed: () async {
                 await ref.read(geminiApiKeyProvider.notifier).setApiKey(controller.text.trim());

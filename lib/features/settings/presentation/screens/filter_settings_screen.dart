@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/filter_settings_provider.dart';
 import '../../../../shared/widgets/gradient_background.dart';
 
@@ -44,20 +44,20 @@ class FilterSettingsScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Smart Shield',
                       style: TextStyle(
-                        color: ThemeConstants.primaryColor,
+                        color: AppTheme.primaryAccent,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.0,
                       ),
                     ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.2, end: 0.0),
                     const SizedBox(height: 6),
-                    Text(
+                    const Text(
                       'Automatically hide unwanted, low-quality, or non-mainstream content from your library and downloads.',
                       style: TextStyle(
-                        color: ThemeConstants.textMuted,
+                        color: AppTheme.textSecondary,
                         fontSize: 13,
                         height: 1.4,
                       ),
@@ -122,7 +122,6 @@ class FilterSettingsScreen extends ConsumerWidget {
       ),
     );
   }
-
   Widget _buildFilterGroup({
     required String title,
     required List<Widget> children,
@@ -137,22 +136,21 @@ class FilterSettingsScreen extends ConsumerWidget {
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: Colors.white70,
+              color: AppTheme.textSecondary,
             ),
           ),
         ),
-        Card(
-          color: ThemeConstants.cardColor,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: ThemeConstants.cardColorLight.withOpacity(0.5),
-              width: 1,
-            ),
+        Container(
+          decoration: BoxDecoration(
+            color: AppTheme.backgroundCard.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+            border: Border.all(color: AppTheme.divider.withOpacity(0.5)),
           ),
-          child: Column(
-            children: children,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+            child: Column(
+              children: children,
+            ),
           ),
         ),
       ],
@@ -170,7 +168,7 @@ class FilterSettingsScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: ThemeConstants.cardColorLight.withOpacity(0.2),
+            color: AppTheme.divider.withOpacity(0.3),
             width: 1,
           ),
         ),
@@ -180,12 +178,12 @@ class FilterSettingsScreen extends ConsumerWidget {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: ThemeConstants.cardColorLight,
+            color: value ? AppTheme.primaryAccent.withOpacity(0.12) : AppTheme.backgroundCard,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
             icon,
-            color: value ? ThemeConstants.primaryColor : ThemeConstants.textMuted,
+            color: value ? AppTheme.primaryAccent : AppTheme.textDisabled,
             size: 20,
           ),
         ),
@@ -194,15 +192,15 @@ class FilterSettingsScreen extends ConsumerWidget {
           style: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 14,
-            color: Colors.white,
+            color: AppTheme.textPrimary,
           ),
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Text(
             subtitle,
-            style: TextStyle(
-              color: ThemeConstants.textMuted,
+            style: const TextStyle(
+              color: AppTheme.textSecondary,
               fontSize: 11,
               height: 1.3,
             ),
@@ -210,7 +208,7 @@ class FilterSettingsScreen extends ConsumerWidget {
         ),
         trailing: Switch.adaptive(
           value: value,
-          activeColor: ThemeConstants.primaryColor,
+          activeColor: AppTheme.secondaryAccent,
           onChanged: onChanged,
         ),
       ),

@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
-
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/metadata_cleaner.dart';
 import '../../../../core/providers/download_location_provider.dart';
 import '../../../../core/services/download_service.dart';
 import '../../../../core/services/filter_pipeline.dart';
@@ -401,7 +401,7 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
     final recentDownloads = ref.watch(recentDownloadsProvider);
 
     return Scaffold(
-      backgroundColor: ThemeConstants.backgroundColor,
+      backgroundColor: AppTheme.backgroundPrimary,
       body: SafeArea(
         child: Column(
           children: [
@@ -412,28 +412,28 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_ios_rounded),
-                    color: ThemeConstants.textPrimary,
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                    color: AppTheme.textPrimary,
                   ),
                   const Expanded(
                     child: Text(
-                      'YouTube Import',  // Space added here
+                      'YouTube Import',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: ThemeConstants.textPrimary,
+                        color: AppTheme.textPrimary,
                       ),
                     ),
                   ),
                   IconButton(
                     onPressed: () {},
                     icon: const Icon(Icons.history_rounded),
-                    color: ThemeConstants.textPrimary,
+                    color: AppTheme.textPrimary,
                   ),
                   IconButton(
                     onPressed: () {},
                     icon: const Icon(Icons.settings_rounded),
-                    color: ThemeConstants.textPrimary,
+                    color: AppTheme.textPrimary,
                   ),
                 ],
               ),
@@ -461,24 +461,114 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: ThemeConstants.warningColor.withValues(alpha: 0.2),
+              color: AppTheme.warning.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(Icons.warning_amber_rounded, size: 48, color: ThemeConstants.warningColor),
+            child: const Icon(Icons.warning_amber_rounded, size: 48, color: AppTheme.warning),
           ),
           const SizedBox(height: 24),
-          Text('Educational Use Only', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+          const Text(
+            'Educational Use Only',
+            style: TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 16),
-          Text(AppConstants.youtubeDisclaimer, style: Theme.of(context).textTheme.bodyMedium, textAlign: TextAlign.center),
+          const Text(
+            AppConstants.youtubeDisclaimer,
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 24),
           Row(
             children: [
-              Expanded(child: OutlinedButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel'))),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+              ),
               const SizedBox(width: 16),
-              Expanded(child: ElevatedButton(onPressed: () => ref.read(disclaimerAcceptedProvider.notifier).state = true, child: const Text('I Understand'))),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryAccent,
+                  ),
+                  onPressed: () => ref.read(disclaimerAcceptedProvider.notifier).state = true,
+                  child: const Text('I Understand'),
+                ),
+              ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  void _handleDownload(DownloadFormat format) async {
+    final url = _urlController.text.trim();
+    if (url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a YouTube URL first')),
+      );
+      return;
+    }
+    
+    ref.read(downloadFormatProvider.notifier).state = format;
+    
+    if (ref.read(downloadStateProvider).videoTitle == null) {
+      await ref.read(downloadStateProvider.notifier).fetchVideoInfo(url);
+    }
+    
+    _startDownload();
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+    bool isLoading = false,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.backgroundCard,
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppTheme.divider.withOpacity(0.5)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isLoading)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryAccent),
+                  )
+                else
+                  Icon(icon, color: color, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -490,135 +580,59 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
         // ADD URL Section
         _buildSectionLabel('ADD URL'),
         const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          decoration: BoxDecoration(
-            color: ThemeConstants.cardColor,
-            borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
-            border: Border.all(color: ThemeConstants.glassBorderColor),
+        TextField(
+          controller: _urlController,
+          decoration: const InputDecoration(
+            hintText: 'https://youtube.com/watch?v...',
+            prefixIcon: Icon(Icons.link_rounded),
           ),
-          child: Row(
-            children: [
-              Icon(Icons.link_rounded, color: ThemeConstants.textMuted, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _urlController,
-                  decoration: const InputDecoration(
-                    hintText: 'https://youtube.com/watch?v...',
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ),
-              // FETCH INFO button
-              TextButton(
-                onPressed: downloadState.status == DownloadStatus.fetching || downloadState.status == DownloadStatus.downloading
-                    ? null
-                    : _fetchVideoInfo,
-                child: Text(
-                  downloadState.status == DownloadStatus.fetching ? 'FETCHING...' : 'FETCH INFO',
-                  style: TextStyle(
-                    color: ThemeConstants.primaryColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          style: const TextStyle(fontSize: 14),
         ),
 
         const SizedBox(height: 16),
 
-        // Download Format Toggle
-        _buildSectionLabel('DOWNLOAD FORMAT'),
+        // Actions Grid
+        _buildSectionLabel('ACTIONS'),
         const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: ThemeConstants.cardColor,
-            borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => ref.read(downloadFormatProvider.notifier).state = DownloadFormat.audio,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: downloadFormat == DownloadFormat.audio 
-                          ? ThemeConstants.primaryColor 
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(ThemeConstants.radiusSmall),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.audiotrack_rounded,
-                          size: 18,
-                          color: downloadFormat == DownloadFormat.audio 
-                              ? Colors.white 
-                              : ThemeConstants.textMuted,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Audio Only',
-                          style: TextStyle(
-                            color: downloadFormat == DownloadFormat.audio 
-                                ? Colors.white 
-                                : ThemeConstants.textMuted,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => ref.read(downloadFormatProvider.notifier).state = DownloadFormat.video,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: downloadFormat == DownloadFormat.video 
-                          ? ThemeConstants.primaryColor 
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(ThemeConstants.radiusSmall),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.videocam_rounded,
-                          size: 18,
-                          color: downloadFormat == DownloadFormat.video 
-                              ? Colors.white 
-                              : ThemeConstants.textMuted,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Video',
-                          style: TextStyle(
-                            color: downloadFormat == DownloadFormat.video 
-                                ? Colors.white 
-                                : ThemeConstants.textMuted,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 2.8,
+          children: [
+            _buildActionButton(
+              icon: Icons.analytics_rounded,
+              label: 'Analyze Link',
+              color: AppTheme.primaryAccent,
+              isLoading: downloadState.status == DownloadStatus.fetching,
+              onTap: _fetchVideoInfo,
+            ),
+            _buildActionButton(
+              icon: Icons.music_note_rounded,
+              label: 'Download MP3',
+              color: AppTheme.secondaryAccent,
+              isLoading: downloadState.status == DownloadStatus.downloading && downloadFormat == DownloadFormat.audio,
+              onTap: () => _handleDownload(DownloadFormat.audio),
+            ),
+            _buildActionButton(
+              icon: Icons.videocam_rounded,
+              label: 'Download MP4',
+              color: AppTheme.blueAccent,
+              isLoading: downloadState.status == DownloadStatus.downloading && downloadFormat == DownloadFormat.video,
+              onTap: () => _handleDownload(DownloadFormat.video),
+            ),
+            _buildActionButton(
+              icon: Icons.clear_all_rounded,
+              label: 'Clear Input',
+              color: AppTheme.redAccent,
+              onTap: () {
+                _urlController.clear();
+                ref.read(downloadStateProvider.notifier).reset();
+              },
+            ),
+          ],
         ),
 
         const SizedBox(height: 16),
@@ -629,19 +643,19 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: ThemeConstants.cardColor,
-            borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
-            border: Border.all(color: ThemeConstants.glassBorderColor),
+            color: AppTheme.backgroundCard,
+            borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+            border: Border.all(color: AppTheme.divider),
           ),
           child: Row(
             children: [
-              Icon(Icons.folder_rounded, color: ThemeConstants.primaryColor, size: 20),
+              const Icon(Icons.folder_rounded, color: AppTheme.primaryAccent, size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  _outputDirectory?.split('/').last ?? '/Music/YouTube',
+                  _outputDirectory?.split('/').last ?? 'DownTune',
                   style: const TextStyle(
-                    color: ThemeConstants.textPrimary,
+                    color: AppTheme.textPrimary,
                     fontSize: 14,
                   ),
                   maxLines: 1,
@@ -650,10 +664,10 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
               ),
               TextButton(
                 onPressed: _selectFolder,
-                child: Text(
+                child: const Text(
                   'CHANGE',
                   style: TextStyle(
-                    color: ThemeConstants.primaryColor,
+                    color: AppTheme.primaryAccent,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
@@ -672,7 +686,7 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
               const Text(
                 'Detected Tracks',
                 style: TextStyle(
-                  color: ThemeConstants.textPrimary,
+                  color: AppTheme.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -681,13 +695,13 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: ThemeConstants.cardColorLight,
+                  color: AppTheme.divider,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(
                   '1 ITEM',
                   style: TextStyle(
-                    color: ThemeConstants.textSecondary,
+                    color: AppTheme.textSecondary,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
@@ -696,9 +710,9 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
               const Spacer(),
               TextButton(
                 onPressed: () => ref.read(downloadStateProvider.notifier).reset(),
-                child: Text(
+                child: const Text(
                   'Clear All',
-                  style: TextStyle(color: ThemeConstants.textMuted, fontSize: 13),
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                 ),
               ),
             ],
@@ -714,17 +728,17 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: ThemeConstants.errorColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+                color: AppTheme.error.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppTheme.cardRadius),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.error_rounded, color: ThemeConstants.errorColor),
+                  const Icon(Icons.error_rounded, color: AppTheme.error),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       downloadState.errorMessage ?? 'Unknown error',
-                      style: TextStyle(color: ThemeConstants.errorColor, fontSize: 13),
+                      style: const TextStyle(color: AppTheme.error, fontSize: 13),
                     ),
                   ),
                 ],
@@ -739,19 +753,19 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: ThemeConstants.successColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+                color: AppTheme.secondaryAccent.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppTheme.cardRadius),
               ),
               child: Column(
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.check_circle_rounded, color: ThemeConstants.successColor),
+                      const Icon(Icons.check_circle_rounded, color: AppTheme.secondaryAccent),
                       const SizedBox(width: 12),
                       const Expanded(
                         child: Text(
                           'Download Complete!',
-                          style: TextStyle(color: ThemeConstants.successColor, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: AppTheme.secondaryAccent, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -776,7 +790,7 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
         // Recent Downloads Section
         _buildRecentDownloadsSection(context, ref, recentDownloads),
 
-        const SizedBox(height: 40),
+        const SizedBox(height: 32),
 
         // Audio quality indicator
         Center(
@@ -784,11 +798,44 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
             downloadFormat == DownloadFormat.audio 
                 ? 'HIGH QUALITY AUDIO EXTRACTION (320KBPS)'
                 : 'HIGH QUALITY VIDEO DOWNLOAD',
-            style: TextStyle(
-              color: ThemeConstants.textMuted,
+            style: const TextStyle(
+              color: AppTheme.textSecondary,
               fontSize: 10,
               letterSpacing: 1,
             ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Warning Banner card
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.warningBackground,
+            borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+            border: Border.all(color: AppTheme.warningBorder),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: AppTheme.warning,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'This feature is for educational use only. Only download content you own or have rights to. By continuing, you confirm you have the legal right to download and use this content.',
+                  style: TextStyle(
+                    color: AppTheme.warning.withOpacity(0.85),
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -805,7 +852,7 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
             const Text(
               'Recently Downloaded',
               style: TextStyle(
-                color: ThemeConstants.textPrimary,
+                color: AppTheme.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -818,9 +865,9 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
                   const SnackBar(content: Text('Refreshing...')),
                 );
               },
-              child: Text(
+              child: const Text(
                 'Refresh',
-                style: TextStyle(color: ThemeConstants.primaryColor, fontSize: 13),
+                style: TextStyle(color: AppTheme.primaryAccent, fontSize: 13),
               ),
             ),
           ],
@@ -832,17 +879,17 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
               return Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: ThemeConstants.cardColor,
-                  borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+                  color: AppTheme.backgroundCard,
+                  borderRadius: BorderRadius.circular(AppTheme.cardRadius),
                 ),
                 child: Center(
                   child: Column(
-                    children: [
-                      Icon(Icons.download_rounded, size: 32, color: ThemeConstants.textMuted),
-                      const SizedBox(height: 8),
+                    children: const [
+                      Icon(Icons.download_rounded, size: 32, color: AppTheme.textSecondary),
+                      SizedBox(height: 8),
                       Text(
                         'No downloads yet',
-                        style: TextStyle(color: ThemeConstants.textMuted, fontSize: 13),
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                       ),
                     ],
                   ),
@@ -857,8 +904,9 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: ThemeConstants.cardColor,
-                    borderRadius: BorderRadius.circular(ThemeConstants.radiusSmall),
+                    color: AppTheme.backgroundCard,
+                    borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+                    border: Border.all(color: AppTheme.divider.withOpacity(0.5)),
                   ),
                   child: Row(
                     children: [
@@ -866,12 +914,14 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          gradient: ThemeConstants.tealGradient,
+                          gradient: const LinearGradient(
+                            colors: [AppTheme.primaryAccent, AppTheme.secondaryAccent],
+                          ),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.music_note_rounded,
-                          color: Colors.white.withValues(alpha: 0.7),
+                          color: Colors.white70,
                           size: 20,
                         ),
                       ),
@@ -881,9 +931,9 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              song.title,
+                              MetadataCleaner.cleanTitle(song.title),
                               style: const TextStyle(
-                                color: ThemeConstants.textPrimary,
+                                color: AppTheme.textPrimary,
                                 fontWeight: FontWeight.w500,
                                 fontSize: 13,
                               ),
@@ -891,9 +941,9 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
-                              song.artist,
-                              style: TextStyle(
-                                color: ThemeConstants.textMuted,
+                              MetadataCleaner.cleanArtist(song.artist),
+                              style: const TextStyle(
+                                color: AppTheme.textSecondary,
                                 fontSize: 11,
                               ),
                               maxLines: 1,
@@ -907,7 +957,7 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
                           ref.read(miniPlayerDismissedProvider.notifier).state = false;
                           ref.read(playerStateProvider.notifier).playSong(song, queue: songs.cast());
                         },
-                        icon: Icon(Icons.play_circle_filled_rounded, color: ThemeConstants.primaryColor),
+                        icon: const Icon(Icons.play_circle_filled_rounded, color: AppTheme.primaryAccent),
                         iconSize: 32,
                       ),
                     ],
@@ -919,7 +969,7 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => Text('Error loading downloads', style: TextStyle(color: ThemeConstants.errorColor)),
+          error: (_, __) => const Text('Error loading downloads', style: TextStyle(color: AppTheme.warning)),
         ),
       ],
     );
@@ -928,8 +978,8 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
   Widget _buildSectionLabel(String label) {
     return Text(
       label,
-      style: TextStyle(
-        color: ThemeConstants.primaryColor,
+      style: const TextStyle(
+        color: AppTheme.primaryAccent,
         fontSize: 11,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.5,
@@ -941,8 +991,9 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: ThemeConstants.cardColor,
-        borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+        color: AppTheme.backgroundCard,
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppTheme.divider),
       ),
       child: Row(
         children: [
@@ -951,12 +1002,14 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              gradient: ThemeConstants.tealGradient,
+              gradient: const LinearGradient(
+                colors: [AppTheme.primaryAccent, AppTheme.secondaryAccent],
+              ),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               format == DownloadFormat.audio ? Icons.audiotrack_rounded : Icons.videocam_rounded,
-              color: Colors.white.withValues(alpha: 0.7),
+              color: Colors.white70,
               size: 24,
             ),
           ),
@@ -967,9 +1020,9 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  downloadState.videoTitle ?? 'Unknown',
+                  MetadataCleaner.cleanTitle(downloadState.videoTitle ?? 'Unknown'),
                   style: const TextStyle(
-                    color: ThemeConstants.textPrimary,
+                    color: AppTheme.textPrimary,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),
@@ -979,12 +1032,12 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.person_rounded, size: 12, color: ThemeConstants.textMuted),
+                    const Icon(Icons.person_rounded, size: 12, color: AppTheme.textSecondary),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
-                        downloadState.videoAuthor ?? 'Unknown',
-                        style: TextStyle(color: ThemeConstants.textMuted, fontSize: 12),
+                        MetadataCleaner.cleanArtist(downloadState.videoAuthor ?? 'Unknown'),
+                        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -992,7 +1045,7 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
                     const SizedBox(width: 8),
                     Text(
                       '• ${_formatDuration(downloadState.videoDuration)}',
-                      style: TextStyle(color: ThemeConstants.textMuted, fontSize: 12),
+                      style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                     ),
                   ],
                 ),
@@ -1011,15 +1064,15 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
                     child: CircularProgressIndicator(
                       value: downloadState.progress,
                       strokeWidth: 2,
-                      color: ThemeConstants.primaryColor,
-                      backgroundColor: ThemeConstants.cardColorLight,
+                      color: AppTheme.primaryAccent,
+                      backgroundColor: AppTheme.backgroundSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${(downloadState.progress * 100).toInt()}%',
-                    style: TextStyle(
-                      color: ThemeConstants.primaryColor,
+                    style: const TextStyle(
+                      color: AppTheme.primaryAccent,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1028,15 +1081,15 @@ class _YouTubeImportScreenState extends ConsumerState<YouTubeImportScreen> {
               ),
             )
           else if (downloadState.status == DownloadStatus.complete)
-            Icon(Icons.check_circle_rounded, color: ThemeConstants.successColor, size: 32)
+            const Icon(Icons.check_circle_rounded, color: AppTheme.secondaryAccent, size: 32)
           else
             IconButton(
               onPressed: downloadState.status == DownloadStatus.idle ? _startDownload : null,
               icon: Icon(
                 Icons.download_rounded,
                 color: downloadState.status == DownloadStatus.idle
-                    ? ThemeConstants.primaryColor
-                    : ThemeConstants.textMuted,
+                    ? AppTheme.primaryAccent
+                    : AppTheme.textSecondary,
               ),
               iconSize: 28,
             ),

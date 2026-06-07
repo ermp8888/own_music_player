@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/gradient_background.dart';
 import '../../../../shared/widgets/glass_container.dart';
@@ -31,20 +30,22 @@ class PlaylistsScreen extends ConsumerWidget {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back_rounded),
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
                     ),
                     const Expanded(
                       child: Text(
                         'Playlists',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimary,
                         ),
                       ),
                     ),
                     IconButton(
                       onPressed: () => _showCreatePlaylistDialog(context, ref),
-                      icon: const Icon(Icons.add_rounded),
+                      icon: const Icon(Icons.add_rounded, color: AppTheme.primaryAccentLight),
+                      iconSize: 28,
                     ),
                   ],
                 ),
@@ -59,12 +60,12 @@ class PlaylistsScreen extends ConsumerWidget {
                         children: [
                           // Smart playlists section
                           if (playlistsState.smartPlaylists.isNotEmpty) ...[
-                            Padding(
-                              padding: const EdgeInsets.only(left: 4, bottom: 12),
+                            const Padding(
+                              padding: EdgeInsets.only(left: 4, bottom: 12),
                               child: Text(
                                 'Smart Playlists',
                                 style: TextStyle(
-                                  color: ThemeConstants.textSecondary,
+                                  color: AppTheme.textSecondary,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -89,18 +90,18 @@ class PlaylistsScreen extends ConsumerWidget {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
+                                const Text(
                                   'Your Playlists',
                                   style: TextStyle(
-                                    color: ThemeConstants.textSecondary,
+                                    color: AppTheme.textSecondary,
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 Text(
                                   '${playlistsState.userPlaylists.length}',
-                                  style: TextStyle(
-                                    color: ThemeConstants.textMuted,
+                                  style: const TextStyle(
+                                    color: AppTheme.textSecondary,
                                     fontSize: 14,
                                   ),
                                 ),
@@ -182,7 +183,14 @@ class PlaylistsScreen extends ConsumerWidget {
                 height: 56,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(colors: gradientColors),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppTheme.thumbnailRadius),
+                  boxShadow: [
+                    BoxShadow(
+                      color: gradientColors.first.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Icon(icon, color: Colors.white, size: 28),
               ),
@@ -196,24 +204,28 @@ class PlaylistsScreen extends ConsumerWidget {
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
+                        color: AppTheme.textPrimary,
                       ),
                     ),
                     if (playlist.description.isNotEmpty)
-                      Text(
-                        playlist.description,
-                        style: TextStyle(
-                          color: ThemeConstants.textMuted,
-                          fontSize: 13,
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          playlist.description,
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 13,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                   ],
                 ),
               ),
               const Icon(
                 Icons.chevron_right_rounded,
-                color: ThemeConstants.textMuted,
+                color: AppTheme.textSecondary,
               ),
             ],
           ),
@@ -227,35 +239,50 @@ class PlaylistsScreen extends ConsumerWidget {
 
   Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
     return Center(
-      child: GlassContainer(
+      child: Container(
         padding: const EdgeInsets.all(32),
         margin: const EdgeInsets.symmetric(vertical: 24),
+        decoration: BoxDecoration(
+          color: AppTheme.backgroundCard.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          border: Border.all(color: AppTheme.divider.withOpacity(0.5)),
+        ),
         child: Column(
           children: [
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: ThemeConstants.cardColor,
+              decoration: const BoxDecoration(
+                color: AppTheme.backgroundPrimary,
                 shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.playlist_add_rounded,
                 size: 48,
-                color: ThemeConstants.textMuted,
+                color: AppTheme.textSecondary,
               ),
             ),
             const SizedBox(height: 20),
-            Text(
+            const Text(
               'No playlists yet',
-              style: Theme.of(context).textTheme.titleMedium,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
             ),
             const SizedBox(height: 8),
-            Text(
+            const Text(
               'Create your first playlist',
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+              ),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryAccent,
+              ),
               onPressed: () => _showCreatePlaylistDialog(context, ref),
               icon: const Icon(Icons.add),
               label: const Text('Create Playlist'),
@@ -272,10 +299,19 @@ class PlaylistsScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Create Playlist'),
+        backgroundColor: AppTheme.backgroundSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          side: const BorderSide(color: AppTheme.divider),
+        ),
+        title: const Text(
+          'Create Playlist',
+          style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
+        ),
         content: TextField(
           controller: nameController,
           autofocus: true,
+          style: const TextStyle(color: AppTheme.textPrimary),
           decoration: const InputDecoration(
             hintText: 'Playlist name',
           ),
@@ -286,6 +322,9 @@ class PlaylistsScreen extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryAccent,
+            ),
             onPressed: () {
               if (nameController.text.trim().isNotEmpty) {
                 ref
@@ -304,24 +343,28 @@ class PlaylistsScreen extends ConsumerWidget {
   void _showPlaylistOptions(BuildContext context, WidgetRef ref, dynamic playlist) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: AppTheme.backgroundPrimary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.edit),
-              title: const Text('Rename'),
+              leading: const Icon(Icons.edit, color: AppTheme.textSecondary),
+              title: const Text('Rename', style: TextStyle(color: AppTheme.textPrimary)),
               onTap: () {
                 Navigator.pop(context);
                 _showRenameDialog(context, ref, playlist);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete, color: ThemeConstants.errorColor),
+              leading: const Icon(Icons.delete, color: AppTheme.warning),
               title: const Text(
                 'Delete',
-                style: TextStyle(color: ThemeConstants.errorColor),
+                style: TextStyle(color: AppTheme.warning),
               ),
               onTap: () {
                 Navigator.pop(context);
@@ -340,10 +383,19 @@ class PlaylistsScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Rename Playlist'),
+        backgroundColor: AppTheme.backgroundSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          side: const BorderSide(color: AppTheme.divider),
+        ),
+        title: const Text(
+          'Rename Playlist',
+          style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
+        ),
         content: TextField(
           controller: nameController,
           autofocus: true,
+          style: const TextStyle(color: AppTheme.textPrimary),
           decoration: const InputDecoration(
             hintText: 'Playlist name',
           ),
@@ -354,6 +406,9 @@ class PlaylistsScreen extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryAccent,
+            ),
             onPressed: () {
               if (nameController.text.trim().isNotEmpty) {
                 ref.read(playlistsProvider.notifier).updatePlaylist(
@@ -375,8 +430,19 @@ class PlaylistsScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Playlist'),
-        content: Text('Are you sure you want to delete "${playlist.name}"?'),
+        backgroundColor: AppTheme.backgroundSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          side: const BorderSide(color: AppTheme.divider),
+        ),
+        title: const Text(
+          'Delete Playlist',
+          style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Are you sure you want to delete "${playlist.name}"?',
+          style: const TextStyle(color: AppTheme.textSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -388,7 +454,7 @@ class PlaylistsScreen extends ConsumerWidget {
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: ThemeConstants.errorColor,
+              backgroundColor: AppTheme.warning,
             ),
             child: const Text('Delete'),
           ),

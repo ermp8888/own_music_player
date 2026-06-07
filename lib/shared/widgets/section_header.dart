@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/theme_constants.dart';
+import '../../core/theme/app_theme.dart';
 
 /// Section header widget
 class SectionHeader extends StatelessWidget {
@@ -37,7 +37,7 @@ class SectionHeader extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: ThemeConstants.textMuted,
+                          color: AppTheme.textSecondary,
                         ),
                   ),
               ],
@@ -51,10 +51,10 @@ class SectionHeader extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
+                  const Text(
                     'See All',
                     style: TextStyle(
-                      color: ThemeConstants.primaryColor,
+                      color: AppTheme.primaryAccent,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -62,7 +62,7 @@ class SectionHeader extends StatelessWidget {
                   const Icon(
                     Icons.arrow_forward_ios,
                     size: 14,
-                    color: ThemeConstants.primaryColor,
+                    color: AppTheme.primaryAccent,
                   ),
                 ],
               ),

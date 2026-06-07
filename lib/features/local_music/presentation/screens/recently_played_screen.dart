@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../shared/widgets/gradient_background.dart';
 import '../widgets/song_tile.dart';
@@ -89,14 +89,14 @@ class RecentlyPlayedScreen extends ConsumerWidget {
             children: [
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back_rounded),
+                icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),
               ),
               const Spacer(),
               IconButton(
                 onPressed: () {
                   ref.invalidate(recentlyPlayedSongsProvider);
                 },
-                icon: const Icon(Icons.refresh_rounded),
+                icon: const Icon(Icons.refresh_rounded, color: AppTheme.textPrimary),
               ),
             ],
           ),
@@ -105,11 +105,13 @@ class RecentlyPlayedScreen extends ConsumerWidget {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              gradient: ThemeConstants.primaryGradient,
+              gradient: const LinearGradient(
+                colors: [AppTheme.primaryAccent, AppTheme.secondaryAccent],
+              ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: ThemeConstants.primaryColor.withValues(alpha: 0.3),
+                  color: AppTheme.primaryAccent.withOpacity(0.3),
                   blurRadius: 20,
                   spreadRadius: 2,
                 ),
@@ -127,15 +129,15 @@ class RecentlyPlayedScreen extends ConsumerWidget {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: ThemeConstants.textPrimary,
+              color: AppTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
           recentSongs.when(
             data: (songs) => Text(
               '${songs.length} songs',
-              style: TextStyle(
-                color: ThemeConstants.textSecondary,
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
                 fontSize: 14,
               ),
             ),
@@ -154,9 +156,10 @@ class RecentlyPlayedScreen extends ConsumerWidget {
                         queue: songs,
                       );
                 },
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text('Play All'),
+                icon: const Icon(Icons.play_arrow_rounded, color: Colors.white),
+                label: const Text('Play All', style: TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryAccent,
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 ),
               );
@@ -173,21 +176,28 @@ class RecentlyPlayedScreen extends ConsumerWidget {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+        children: const [
           Icon(
             Icons.history_rounded,
             size: 64,
-            color: ThemeConstants.textMuted,
+            color: AppTheme.textSecondary,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             'No recently played songs',
-            style: Theme.of(context).textTheme.titleMedium,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimary,
+            ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Start playing some music!',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.textSecondary,
+            ),
           ),
         ],
       ),

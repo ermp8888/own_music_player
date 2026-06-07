@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/share_service.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/metadata_cleaner.dart';
@@ -71,15 +71,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     final playerState = ref.watch(playerStateProvider);
     final timerState = ref.watch(sleepTimerProvider);
     final isFavorite = ref.watch(currentSongFavoriteProvider);
-
     return Scaffold(
-      backgroundColor: ThemeConstants.backgroundColor,
+      backgroundColor: AppTheme.backgroundPrimary,
       body: SafeArea(
         child: currentSong.when(
           data: (song) {
             if (song == null) {
               return const Center(
-                child: Text('No song playing'),
+                child: Text('No song playing', style: TextStyle(color: AppTheme.textSecondary)),
               );
             }
 
@@ -87,28 +86,29 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               children: [
                 // Header
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Back button (chevron down)
                       Container(
                         decoration: BoxDecoration(
-                          color: ThemeConstants.cardColor,
+                          color: AppTheme.backgroundCard.withOpacity(0.6),
                           shape: BoxShape.circle,
+                          border: Border.all(color: AppTheme.divider.withOpacity(0.5)),
                         ),
                         child: IconButton(
                           onPressed: () => Navigator.pop(context),
                           icon: const Icon(Icons.keyboard_arrow_down_rounded),
                           iconSize: 28,
-                          color: ThemeConstants.textPrimary,
+                          color: AppTheme.textPrimary,
                         ),
                       ),
                       // NOW PLAYING text
                       const Text(
                         'NOW PLAYING',
                         style: TextStyle(
-                          color: ThemeConstants.textSecondary,
+                          color: AppTheme.textSecondary,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 1.5,
@@ -117,20 +117,20 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       // More options button
                       Container(
                         decoration: BoxDecoration(
-                          color: ThemeConstants.cardColor,
+                          color: AppTheme.backgroundCard.withOpacity(0.6),
                           shape: BoxShape.circle,
+                          border: Border.all(color: AppTheme.divider.withOpacity(0.5)),
                         ),
                         child: IconButton(
                           onPressed: () => showSongActions(context, ref, song),
                           icon: const Icon(Icons.more_horiz_rounded),
                           iconSize: 24,
-                          color: ThemeConstants.textPrimary,
+                          color: AppTheme.textPrimary,
                         ),
                       ),
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 20),
 
                 // Large Album Art
@@ -142,18 +142,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       aspectRatio: 1,
                       child: Container(
                         decoration: BoxDecoration(
-                          gradient: ThemeConstants.tealGradient,
-                          borderRadius: BorderRadius.circular(ThemeConstants.radiusLarge),
+                          gradient: const LinearGradient(
+                            colors: [AppTheme.primaryAccent, AppTheme.primaryAccentLight],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
                           boxShadow: [
                             BoxShadow(
-                              color: ThemeConstants.tealAccent.withValues(alpha: 0.3),
+                              color: AppTheme.primaryAccent.withOpacity(0.24),
                               blurRadius: 30,
                               offset: const Offset(0, 15),
                             ),
                           ],
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(ThemeConstants.radiusLarge),
+                          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
                           child: song.albumArtPath != null && song.albumArtPath!.isNotEmpty
                               ? (song.albumArtPath!.startsWith('http')
                                   ? Image.network(
@@ -189,7 +193,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                               style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
-                                color: ThemeConstants.textPrimary,
+                                color: AppTheme.textPrimary,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -197,9 +201,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                             const SizedBox(height: 4),
                             Text(
                               MetadataCleaner.cleanArtist(song.artist),
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 14,
-                                color: ThemeConstants.textSecondary,
+                                color: AppTheme.textSecondary,
                               ),
                             ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.2, end: 0),
                           ],
@@ -213,7 +217,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         },
                         icon: Icon(
                           isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                          color: isFavorite ? Colors.red : ThemeConstants.textSecondary,
+                          color: isFavorite ? Colors.redAccent : AppTheme.textSecondary,
                         ),
                         iconSize: 28,
                       ),
@@ -235,8 +239,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       child: WaveformVisualization(
                         isPlaying: playing,
                         progress: progress,
-                        activeColor: ThemeConstants.primaryColor,
-                        inactiveColor: ThemeConstants.cardColorLight,
+                        activeColor: AppTheme.primaryAccent,
+                        inactiveColor: AppTheme.backgroundCard,
                         barCount: 40,
                         height: 50,
                       ),
@@ -264,9 +268,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                             overlayShape: const RoundSliderOverlayShape(
                               overlayRadius: 14,
                             ),
-                            activeTrackColor: ThemeConstants.textPrimary,
-                            inactiveTrackColor: ThemeConstants.cardColorLight,
-                            thumbColor: ThemeConstants.textPrimary,
+                            activeTrackColor: AppTheme.primaryAccent,
+                            inactiveTrackColor: AppTheme.backgroundCard,
+                            thumbColor: AppTheme.primaryAccent,
                           ),
                           child: Slider(
                             value: data.position.inMilliseconds.toDouble(),
@@ -288,15 +292,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                             children: [
                               Text(
                                 Formatters.formatDuration(data.position),
-                                style: TextStyle(
-                                  color: ThemeConstants.textMuted,
+                                style: const TextStyle(
+                                  color: AppTheme.textSecondary,
                                   fontSize: 12,
                                 ),
                               ),
                               Text(
                                 Formatters.formatDuration(data.duration),
-                                style: TextStyle(
-                                  color: ThemeConstants.textMuted,
+                                style: const TextStyle(
+                                  color: AppTheme.textSecondary,
                                   fontSize: 12,
                                 ),
                               ),
@@ -326,8 +330,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         icon: Icon(
                           Icons.shuffle_rounded,
                           color: playerState.shuffleEnabled
-                              ? ThemeConstants.primaryColor
-                              : ThemeConstants.textMuted,
+                              ? AppTheme.primaryAccent
+                              : AppTheme.textDisabled,
                         ),
                         iconSize: 24,
                       ),
@@ -338,11 +342,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         },
                         icon: const Icon(
                           Icons.skip_previous_rounded,
-                          color: ThemeConstants.textPrimary,
+                          color: AppTheme.textPrimary,
                         ),
                         iconSize: 36,
                       ),
-                      // Play/Pause - Large white circle
+                      // Play/Pause - Large gradient circle
                       isPlaying.when(
                         data: (playing) => GestureDetector(
                           onTap: () {
@@ -351,15 +355,20 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           child: Container(
                             width: 72,
                             height: 72,
-                            decoration: const BoxDecoration(
-                              color: ThemeConstants.textPrimary,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [AppTheme.primaryAccent, AppTheme.primaryAccentLight],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
                               shape: BoxShape.circle,
+                              boxShadow: AppTheme.activeShadow,
                             ),
                             child: Icon(
                               playing
                                   ? Icons.pause_rounded
                                   : Icons.play_arrow_rounded,
-                              color: ThemeConstants.backgroundColor,
+                              color: Colors.white,
                               size: 36,
                             ),
                           ).animate().scale(delay: 200.ms, duration: 300.ms),
@@ -374,7 +383,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         },
                         icon: const Icon(
                           Icons.skip_next_rounded,
-                          color: ThemeConstants.textPrimary,
+                          color: AppTheme.textPrimary,
                         ),
                         iconSize: 36,
                       ),
@@ -388,8 +397,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                               ? Icons.repeat_one_rounded
                               : Icons.repeat_rounded,
                           color: playerState.repeatMode != RepeatMode.off
-                              ? ThemeConstants.primaryColor
-                              : ThemeConstants.textMuted,
+                              ? AppTheme.primaryAccent
+                              : AppTheme.textDisabled,
                         ),
                         iconSize: 24,
                       ),
@@ -412,7 +421,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         },
                         icon: const Icon(
                           Icons.queue_music_rounded,
-                          color: ThemeConstants.textMuted,
+                          color: AppTheme.textSecondary,
                         ),
                         iconSize: 24,
                       ),
@@ -420,22 +429,23 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                         decoration: BoxDecoration(
-                          color: ThemeConstants.cardColor,
+                          color: AppTheme.backgroundCard.withOpacity(0.6),
                           borderRadius: BorderRadius.circular(30),
+                          border: Border.all(color: AppTheme.divider.withOpacity(0.5)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: [
+                          children: const [
                             Icon(
                               Icons.subtitles_rounded,
-                              color: ThemeConstants.primaryColor,
+                              color: AppTheme.primaryAccent,
                               size: 18,
                             ),
-                            const SizedBox(width: 8),
-                            const Text(
+                            SizedBox(width: 8),
+                            Text(
                               'LYRICS',
                               style: TextStyle(
-                                color: ThemeConstants.textPrimary,
+                                color: AppTheme.textPrimary,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.5,
@@ -450,8 +460,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         icon: Icon(
                           Icons.timer_rounded,
                           color: timerState.isActive
-                              ? ThemeConstants.primaryColor
-                              : ThemeConstants.textMuted,
+                              ? AppTheme.secondaryAccent
+                              : AppTheme.textSecondary,
                         ),
                         iconSize: 24,
                       ),
@@ -460,7 +470,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         onPressed: () => ShareService.shareSong(song),
                         icon: const Icon(
                           Icons.share_rounded,
-                          color: ThemeConstants.textMuted,
+                          color: AppTheme.textSecondary,
                         ),
                         iconSize: 24,
                       ),

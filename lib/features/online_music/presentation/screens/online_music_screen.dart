@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
-import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/metadata_cleaner.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../player/presentation/providers/player_provider.dart';
 import '../../../../shared/widgets/glass_container.dart';
@@ -116,7 +117,7 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('"${next.songTitle}" downloaded successfully!'),
-            backgroundColor: ThemeConstants.successColor,
+            backgroundColor: AppTheme.secondaryAccent,
             duration: const Duration(seconds: 3),
           ),
         );
@@ -126,7 +127,7 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to download: ${next.errorMessage}'),
-            backgroundColor: ThemeConstants.errorColor,
+            backgroundColor: AppTheme.warning,
             duration: const Duration(seconds: 3),
           ),
         );
@@ -151,76 +152,70 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Explore Online',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: ThemeConstants.textPrimary,
+                      color: AppTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  const Text(
                     'Search & stream the latest Bollywood hits online',
                     style: TextStyle(
                       fontSize: 14,
-                      color: ThemeConstants.textSecondary,
+                      color: AppTheme.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
 
+
             // Search Bar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: GlassContainer(
-                borderRadius: ThemeConstants.radiusMedium,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: TextField(
-                  controller: _searchController,
-                  focusNode: _searchFocusNode,
-                  style: const TextStyle(color: ThemeConstants.textPrimary),
-                  decoration: InputDecoration(
-                    hintText: 'Search songs, artists, or movies...',
-                    hintStyle: TextStyle(color: ThemeConstants.textMuted),
-                    border: InputBorder.none,
-                    icon: Icon(Icons.search_rounded, color: ThemeConstants.primaryColor),
-                    suffixIcon: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_searchController.text.isNotEmpty)
-                          IconButton(
-                            icon: const Icon(Icons.clear_rounded),
-                            color: ThemeConstants.textMuted,
-                            onPressed: () {
-                              _searchController.clear();
-                              ref.read(onlineMusicSearchQueryProvider.notifier).state = '';
-                              setState(() {});
-                            },
-                          ),
+              child: TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                style: const TextStyle(color: AppTheme.textPrimary),
+                decoration: InputDecoration(
+                  hintText: 'Search songs, artists, or movies...',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_searchController.text.isNotEmpty)
                         IconButton(
-                          icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
-                          color: _isListening ? ThemeConstants.primaryColor : ThemeConstants.textMuted,
-                          onPressed: _listen,
+                          icon: const Icon(Icons.clear_rounded),
+                          onPressed: () {
+                            _searchController.clear();
+                            ref.read(onlineMusicSearchQueryProvider.notifier).state = '';
+                            setState(() {});
+                          },
                         ),
-                      ],
-                    ),
+                      IconButton(
+                        icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
+                        color: _isListening ? AppTheme.primaryAccent : AppTheme.textSecondary,
+                        onPressed: _listen,
+                      ),
+                    ],
                   ),
-                  onChanged: (val) {
-                    setState(() {});
-                  },
-                  onSubmitted: _onSearchSubmitted,
                 ),
+                onChanged: (val) {
+                  setState(() {});
+                },
+                onSubmitted: _onSearchSubmitted,
               ),
             ),
 
             // Quick Tags Scroll
             SizedBox(
-              height: 50,
+              height: 48,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                 itemCount: _quickTags.length,
                 itemBuilder: (context, index) {
                   final tag = _quickTags[index];
@@ -233,21 +228,24 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? ThemeConstants.primaryColor
-                              : ThemeConstants.cardColor,
-                          borderRadius: BorderRadius.circular(20),
+                              ? AppTheme.primaryAccent
+                              : AppTheme.backgroundCard,
+                          borderRadius: BorderRadius.circular(AppTheme.chipRadius),
                           border: Border.all(
                             color: isSelected
-                                ? ThemeConstants.primaryColor
-                                : ThemeConstants.glassBorderColor,
+                                ? Colors.transparent
+                                : AppTheme.divider,
                           ),
+                          boxShadow: isSelected ? AppTheme.activeShadow : null,
                         ),
-                        child: Text(
-                          tag['label']!,
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : ThemeConstants.textPrimary,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            fontSize: 13,
+                        child: Center(
+                          child: Text(
+                            tag['label']!,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : AppTheme.textSecondary,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ),
@@ -256,8 +254,6 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
                 },
               ),
             ),
-
-            const SizedBox(height: 10),
 
             // Songs List
             Expanded(
@@ -282,26 +278,26 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+        children: const [
           Icon(
             Icons.music_off_rounded,
             size: 64,
-            color: ThemeConstants.textMuted,
+            color: AppTheme.textSecondary,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             'No songs found',
             style: TextStyle(
-              color: ThemeConstants.textSecondary,
+              color: AppTheme.textPrimary,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Try adjusting your search query',
             style: TextStyle(
-              color: ThemeConstants.textMuted,
+              color: AppTheme.textSecondary,
               fontSize: 14,
             ),
           ),
@@ -320,23 +316,23 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
             const Icon(
               Icons.wifi_off_rounded,
               size: 64,
-              color: Colors.redAccent,
+              color: AppTheme.warning,
             ),
             const SizedBox(height: 16),
             const Text(
               'Failed to load music',
               style: TextStyle(
-                color: ThemeConstants.textPrimary,
+                color: AppTheme.textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 8),
-            Text(
+            const Text(
               'Please check your internet connection or try again later.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: ThemeConstants.textMuted,
+                color: AppTheme.textSecondary,
                 fontSize: 13,
               ),
             ),
@@ -348,7 +344,7 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: ThemeConstants.primaryColor,
+                backgroundColor: AppTheme.primaryAccent,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -367,8 +363,8 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       itemBuilder: (context, index) {
         return Shimmer.fromColors(
-          baseColor: ThemeConstants.cardColor,
-          highlightColor: ThemeConstants.cardColorLight,
+          baseColor: AppTheme.backgroundCard,
+          highlightColor: AppTheme.backgroundSurface,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
@@ -426,14 +422,21 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
           margin: const EdgeInsets.symmetric(vertical: 6),
           decoration: BoxDecoration(
             color: isPlayingCurrent
-                ? ThemeConstants.primaryColor.withValues(alpha: 0.15)
-                : ThemeConstants.cardColor.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(12),
+                ? AppTheme.primaryAccent.withOpacity(0.12)
+                : AppTheme.backgroundCard.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(AppTheme.thumbnailRadius),
             border: Border.all(
               color: isPlayingCurrent
-                  ? ThemeConstants.primaryColor.withValues(alpha: 0.4)
-                  : ThemeConstants.glassBorderColor,
+                  ? AppTheme.primaryAccent.withOpacity(0.3)
+                  : AppTheme.divider.withOpacity(0.5),
             ),
+            boxShadow: isPlayingCurrent ? [
+              BoxShadow(
+                color: AppTheme.primaryAccent.withOpacity(0.15),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ] : null,
           ),
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -449,19 +452,19 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
                           height: 48,
                           fit: BoxFit.cover,
                           placeholder: (context, url) => Container(
-                            color: ThemeConstants.cardColor,
-                            child: const Icon(Icons.music_note_rounded, color: Colors.white24),
+                            color: AppTheme.backgroundCard,
+                            child: const Icon(Icons.music_note_rounded, color: AppTheme.textDisabled),
                           ),
                           errorWidget: (context, url, error) => Container(
-                            color: ThemeConstants.cardColor,
-                            child: const Icon(Icons.music_note_rounded, color: Colors.white24),
+                            color: AppTheme.backgroundCard,
+                            child: const Icon(Icons.music_note_rounded, color: AppTheme.textDisabled),
                           ),
                         )
                       : Container(
                           width: 48,
                           height: 48,
-                          color: ThemeConstants.cardColor,
-                          child: const Icon(Icons.music_note_rounded, color: Colors.white24),
+                          color: AppTheme.backgroundCard,
+                          child: const Icon(Icons.music_note_rounded, color: AppTheme.textDisabled),
                         ),
                 ),
                 if (isPlayingCurrent)
@@ -481,20 +484,20 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
               ],
             ),
             title: Text(
-              song.title,
+              MetadataCleaner.cleanTitle(song.title),
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
-                color: isPlayingCurrent ? ThemeConstants.primaryColor : ThemeConstants.textPrimary,
+                color: isPlayingCurrent ? AppTheme.primaryAccent : AppTheme.textPrimary,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             subtitle: Text(
-              '${song.artist} • ${song.album}',
-              style: TextStyle(
+              '${MetadataCleaner.cleanArtist(song.artist)} • ${song.album}',
+              style: const TextStyle(
                 fontSize: 12,
-                color: ThemeConstants.textSecondary,
+                color: AppTheme.textSecondary,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -505,15 +508,15 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
                 // Display song duration
                 Text(
                   _formatDuration(song.duration),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 11,
-                    color: ThemeConstants.textMuted,
+                    color: AppTheme.textSecondary,
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.more_vert_rounded),
-                  color: ThemeConstants.textMuted,
+                  color: AppTheme.textSecondary,
                   onPressed: () => _showOnlineSongOptions(context, song),
                 ),
               ],
@@ -541,42 +544,42 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
   void _showOnlineSongOptions(BuildContext context, Song song) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: ThemeConstants.backgroundColor,
+      backgroundColor: AppTheme.backgroundPrimary,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: Icon(Icons.play_arrow_rounded, color: ThemeConstants.primaryColor),
-              title: const Text('Play Now', style: TextStyle(color: ThemeConstants.textPrimary)),
+              leading: const Icon(Icons.play_arrow_rounded, color: AppTheme.primaryAccent),
+              title: const Text('Play Now', style: TextStyle(color: AppTheme.textPrimary)),
               onTap: () {
                 Navigator.pop(context);
                 ref.read(playerStateProvider.notifier).playSong(song);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.download_rounded, color: ThemeConstants.textPrimary),
-              title: const Text('Download Song', style: TextStyle(color: ThemeConstants.textPrimary)),
+              leading: const Icon(Icons.download_rounded, color: AppTheme.textPrimary),
+              title: const Text('Download Song', style: TextStyle(color: AppTheme.textPrimary)),
               onTap: () {
                 Navigator.pop(context);
                 _showDownloadLocationDialog(context, song);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.playlist_add_rounded, color: ThemeConstants.textPrimary),
-              title: const Text('Add to Playlist', style: TextStyle(color: ThemeConstants.textPrimary)),
+              leading: const Icon(Icons.playlist_add_rounded, color: AppTheme.textPrimary),
+              title: const Text('Add to Playlist', style: TextStyle(color: AppTheme.textPrimary)),
               onTap: () {
                 Navigator.pop(context);
                 _showPlaylistSelectionSheet(context, song);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.share_rounded, color: ThemeConstants.textPrimary),
-              title: const Text('Share Song', style: TextStyle(color: ThemeConstants.textPrimary)),
+              leading: const Icon(Icons.share_rounded, color: AppTheme.textPrimary),
+              title: const Text('Share Song', style: TextStyle(color: AppTheme.textPrimary)),
               onTap: () {
                 Navigator.pop(context);
                 ShareService.shareSong(song);
@@ -593,12 +596,12 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
     
     showModalBottomSheet(
       context: context,
-      backgroundColor: ThemeConstants.backgroundColor,
+      backgroundColor: AppTheme.backgroundPrimary,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -608,7 +611,7 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: ThemeConstants.textPrimary,
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -616,16 +619,16 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
               'Choose where to save "${song.title}"',
               style: const TextStyle(
                 fontSize: 14,
-                color: ThemeConstants.textSecondary,
+                color: AppTheme.textSecondary,
               ),
             ),
             const SizedBox(height: 20),
             ListTile(
-              leading: const Icon(Icons.folder_rounded, color: ThemeConstants.primaryColor),
-              title: const Text('Save to Default Folder', style: TextStyle(color: ThemeConstants.textPrimary)),
+              leading: const Icon(Icons.folder_rounded, color: AppTheme.primaryAccent),
+              title: const Text('Save to Default Folder', style: TextStyle(color: AppTheme.textPrimary)),
               subtitle: Text(
                 defaultLocation.split('/').last.isEmpty ? 'MyMusicApp' : defaultLocation.split('/').last,
-                style: const TextStyle(color: ThemeConstants.textMuted),
+                style: const TextStyle(color: AppTheme.textSecondary),
               ),
               onTap: () {
                 Navigator.pop(context);
@@ -633,9 +636,9 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.create_new_folder_rounded, color: ThemeConstants.primaryColor),
-              title: const Text('Choose Custom Folder...', style: TextStyle(color: ThemeConstants.textPrimary)),
-              subtitle: const Text('Pick any directory on your device', style: TextStyle(color: ThemeConstants.textMuted)),
+              leading: const Icon(Icons.create_new_folder_rounded, color: AppTheme.primaryAccent),
+              title: const Text('Choose Custom Folder...', style: TextStyle(color: AppTheme.textPrimary)),
+              subtitle: const Text('Pick any directory on your device', style: TextStyle(color: AppTheme.textSecondary)),
               onTap: () async {
                 Navigator.pop(context);
                 try {
@@ -649,7 +652,7 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Could not access folder picker'),
-                      backgroundColor: ThemeConstants.errorColor,
+                      backgroundColor: AppTheme.warning,
                     ),
                   );
                 }
@@ -664,16 +667,16 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
   void _showPlaylistSelectionSheet(BuildContext context, Song song) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: ThemeConstants.backgroundColor,
+      backgroundColor: AppTheme.backgroundPrimary,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return Consumer(
           builder: (context, ref, child) {
             final playlistsState = ref.watch(playlistsProvider);
             return Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -683,7 +686,7 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: ThemeConstants.textPrimary,
+                      color: AppTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -691,25 +694,25 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: const BoxDecoration(
-                        color: ThemeConstants.primaryColor,
+                        color: AppTheme.primaryAccent,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.add, color: Colors.white, size: 20),
                     ),
-                    title: const Text('Create New Playlist', style: TextStyle(color: ThemeConstants.textPrimary)),
+                    title: const Text('Create New Playlist', style: TextStyle(color: AppTheme.textPrimary)),
                     onTap: () {
                       Navigator.pop(context);
                       _showCreatePlaylistAndAddDialog(context, ref, song);
                     },
                   ),
-                  const Divider(color: ThemeConstants.glassBorderColor),
+                  const Divider(color: AppTheme.divider),
                   if (playlistsState.userPlaylists.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 24),
                       child: Center(
                         child: Text(
                           'No playlists yet.',
-                          style: TextStyle(color: ThemeConstants.textMuted),
+                          style: TextStyle(color: AppTheme.textSecondary),
                         ),
                       ),
                     )
@@ -723,14 +726,14 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
                             leading: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: ThemeConstants.primaryColor.withValues(alpha: 0.1),
+                                color: AppTheme.primaryAccent.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Icon(Icons.playlist_play_rounded, color: ThemeConstants.primaryColor, size: 24),
+                              child: const Icon(Icons.playlist_play_rounded, color: AppTheme.primaryAccent, size: 24),
                             ),
                             title: Text(
                               playlist.name,
-                              style: const TextStyle(color: ThemeConstants.textPrimary),
+                              style: const TextStyle(color: AppTheme.textPrimary),
                             ),
                             onTap: () async {
                               Navigator.pop(context);
@@ -776,7 +779,7 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Added "${song.title}" to ${playlist.name}'),
-            backgroundColor: ThemeConstants.successColor,
+            backgroundColor: AppTheme.secondaryAccent,
           ),
         );
       }
@@ -784,7 +787,7 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to add to playlist: $e'),
-          backgroundColor: ThemeConstants.errorColor,
+          backgroundColor: AppTheme.warning,
         ),
       );
     }
@@ -796,23 +799,32 @@ class _OnlineMusicScreenState extends ConsumerState<OnlineMusicScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: ThemeConstants.cardColor,
-        title: const Text('Create Playlist'),
+        backgroundColor: AppTheme.backgroundCard,
+        title: const Text('Create Playlist', style: TextStyle(color: AppTheme.textPrimary)),
         content: TextField(
           controller: nameController,
           autofocus: true,
-          style: const TextStyle(color: ThemeConstants.textPrimary),
+          style: const TextStyle(color: AppTheme.textPrimary),
           decoration: const InputDecoration(
             hintText: 'Playlist name',
-            hintStyle: TextStyle(color: ThemeConstants.textMuted),
+            hintStyle: TextStyle(color: AppTheme.textSecondary),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppTheme.divider),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: AppTheme.primaryAccent),
+            ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryAccent,
+            ),
             onPressed: () async {
               final name = nameController.text.trim();
               if (name.isNotEmpty) {

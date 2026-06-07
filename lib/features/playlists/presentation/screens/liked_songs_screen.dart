@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/services/share_service.dart';
@@ -93,7 +92,7 @@ class LikedSongsScreen extends ConsumerWidget {
             children: [
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back_rounded),
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
               ),
               const Spacer(),
             ],
@@ -109,7 +108,7 @@ class LikedSongsScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.purpleAccent.withValues(alpha: 0.3),
+                  color: AppTheme.purpleAccent.withOpacity(0.3),
                   blurRadius: 20,
                   spreadRadius: 2,
                 ),
@@ -127,15 +126,15 @@ class LikedSongsScreen extends ConsumerWidget {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: ThemeConstants.textPrimary,
+              color: AppTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
           favoriteSongs.when(
             data: (songs) => Text(
               '${songs.length} songs',
-              style: TextStyle(
-                color: ThemeConstants.textSecondary,
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
                 fontSize: 14,
               ),
             ),
@@ -156,6 +155,7 @@ class LikedSongsScreen extends ConsumerWidget {
                 icon: const Icon(Icons.play_arrow_rounded),
                 label: const Text('Play All'),
                 style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryAccent,
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 ),
               );
@@ -172,21 +172,28 @@ class LikedSongsScreen extends ConsumerWidget {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+        children: const [
           Icon(
             Icons.favorite_border_rounded,
             size: 64,
-            color: ThemeConstants.textMuted,
+            color: AppTheme.textSecondary,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             'No liked songs yet',
-            style: Theme.of(context).textTheme.titleMedium,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimary,
+            ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Tap the heart icon to add songs',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.textSecondary,
+            ),
           ),
         ],
       ),
@@ -196,22 +203,26 @@ class LikedSongsScreen extends ConsumerWidget {
   void _showSongOptions(BuildContext context, WidgetRef ref, Song song) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: AppTheme.backgroundPrimary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.edit_rounded),
-              title: const Text('Rename'),
+              leading: const Icon(Icons.edit_rounded, color: AppTheme.textSecondary),
+              title: const Text('Rename', style: TextStyle(color: AppTheme.textPrimary)),
               onTap: () {
                 Navigator.pop(context);
                 _showRenameDialog(context, ref, song);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.favorite_border_rounded, color: Colors.red),
-              title: const Text('Remove from Liked Songs'),
+              leading: const Icon(Icons.favorite_rounded, color: AppTheme.warning),
+              title: const Text('Remove from Liked Songs', style: TextStyle(color: AppTheme.warning)),
               onTap: () async {
                 Navigator.pop(context);
                 await FavoriteHelper.toggleFavorite(
@@ -222,8 +233,8 @@ class LikedSongsScreen extends ConsumerWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.share_rounded),
-              title: const Text('Share'),
+              leading: const Icon(Icons.share_rounded, color: AppTheme.textSecondary),
+              title: const Text('Share', style: TextStyle(color: AppTheme.textPrimary)),
               onTap: () {
                 Navigator.pop(context);
                 ShareService.shareSong(song);
@@ -242,34 +253,31 @@ class LikedSongsScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: ThemeConstants.cardColor,
-        title: const Text('Rename Song'),
+        backgroundColor: AppTheme.backgroundSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          side: const BorderSide(color: AppTheme.divider),
+        ),
+        title: const Text(
+          'Rename Song',
+          style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: titleController,
-              decoration: InputDecoration(
+              style: const TextStyle(color: AppTheme.textPrimary),
+              decoration: const InputDecoration(
                 labelText: 'Title',
-                filled: true,
-                fillColor: ThemeConstants.backgroundColor,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: artistController,
-              decoration: InputDecoration(
+              style: const TextStyle(color: AppTheme.textPrimary),
+              decoration: const InputDecoration(
                 labelText: 'Artist',
-                filled: true,
-                fillColor: ThemeConstants.backgroundColor,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
               ),
             ),
           ],
@@ -280,6 +288,9 @@ class LikedSongsScreen extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryAccent,
+            ),
             onPressed: () async {
               final newTitle = titleController.text.trim();
               final newArtist = artistController.text.trim();

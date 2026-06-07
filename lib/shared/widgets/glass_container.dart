@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../../core/constants/theme_constants.dart';
+import '../../core/theme/app_theme.dart';
 
 /// Glassmorphism container widget
 class GlassContainer extends StatelessWidget {
@@ -23,8 +23,8 @@ class GlassContainer extends StatelessWidget {
     this.height,
     this.padding,
     this.margin,
-    this.borderRadius = ThemeConstants.radiusMedium,
-    this.blur = ThemeConstants.glassBlur,
+    this.borderRadius = 16,
+    this.blur = 20,
     this.backgroundColor,
     this.borderColor,
     this.shadows,
@@ -42,10 +42,10 @@ class GlassContainer extends StatelessWidget {
           height: height,
           padding: padding,
           decoration: BoxDecoration(
-            color: backgroundColor ?? ThemeConstants.glassColor,
+            color: backgroundColor ?? Colors.white.withOpacity(0.05),
             borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(
-              color: borderColor ?? ThemeConstants.glassBorderColor,
+              color: borderColor ?? AppTheme.divider,
               width: 1,
             ),
             boxShadow: shadows,

@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/theme/app_theme.dart';
 
 /// Animated waveform visualization widget that syncs with music playback
 class WaveformVisualization extends StatefulWidget {
@@ -99,8 +99,8 @@ class _WaveformVisualizationState extends State<WaveformVisualization>
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = widget.activeColor ?? ThemeConstants.primaryColor;
-    final inactiveColor = widget.inactiveColor ?? ThemeConstants.cardColorLight;
+    final activeColor = widget.activeColor ?? AppTheme.primaryAccent;
+    final inactiveColor = widget.inactiveColor ?? AppTheme.divider;
 
     return SizedBox(
       height: widget.height,
@@ -149,8 +149,8 @@ class MiniWaveform extends StatelessWidget {
       child: CustomPaint(
         painter: _WaveformPainter(
           progress: progress,
-          activeColor: activeColor ?? ThemeConstants.primaryColor,
-          inactiveColor: inactiveColor ?? ThemeConstants.cardColorLight,
+          activeColor: activeColor ?? AppTheme.primaryAccent,
+          inactiveColor: inactiveColor ?? AppTheme.divider,
         ),
       ),
     );
