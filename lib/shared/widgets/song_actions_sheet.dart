@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/theme_constants.dart';
 import '../../core/database/app_database.dart';
 import '../../core/services/share_service.dart';
+import '../../core/helpers/favorite_helper.dart';
 import '../../features/player/presentation/providers/player_provider.dart';
 import '../../features/local_music/presentation/providers/library_provider.dart';
 import '../../features/playlists/presentation/screens/playlists_screen.dart';
+import '../../features/playlists/presentation/providers/playlist_provider.dart';
 
 /// Shows a bottom sheet with actions for a given song.
 void showSongActions(BuildContext context, WidgetRef ref, Song song) {
@@ -91,7 +93,10 @@ class _SongActionsSheet extends ConsumerWidget {
               iconColor: song.isFavorite ? Colors.red : null,
               onTap: () async {
                 final db = ref.read(databaseProvider);
-                await db.toggleFavorite(song.id);
+                final existing = await db.getSongById(song.id);
+                final newFavoriteState = existing == null ? true : !existing.isFavorite;
+                await FavoriteHelper.toggleFavorite(database: db, song: song);
+                ref.read(audioHandlerProvider).updateSongFavoriteState(song.id, newFavoriteState);
                 if (context.mounted) Navigator.pop(context);
               },
             ),
@@ -216,12 +221,156 @@ class _ActionTile extends StatelessWidget {
   }
 }
 
-void _showAddToPlaylistSheet(
-    BuildContext context, WidgetRef ref, Song song) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => const PlaylistsScreen(),
+void _showAddToPlaylistSheet(BuildContext context, WidgetRef ref, Song song) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: ThemeConstants.backgroundColor,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) {
+      return Consumer(
+        builder: (context, ref, child) {
+          final playlistsState = ref.watch(playlistsProvider);
+          return Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Add to Playlist',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: ThemeConstants.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: ThemeConstants.primaryColor,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.add, color: Colors.white, size: 20),
+                  ),
+                  title: const Text('Create New Playlist', style: TextStyle(color: ThemeConstants.textPrimary)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showCreatePlaylistAndAddDialog(context, ref, song);
+                  },
+                ),
+                const Divider(color: ThemeConstants.glassBorderColor),
+                if (playlistsState.userPlaylists.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        'No playlists yet.',
+                        style: TextStyle(color: ThemeConstants.textMuted),
+                      ),
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: playlistsState.userPlaylists.length,
+                      itemBuilder: (context, index) {
+                        final playlist = playlistsState.userPlaylists[index];
+                        return ListTile(
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: ThemeConstants.primaryColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(Icons.playlist_play_rounded, color: ThemeConstants.primaryColor, size: 24),
+                          ),
+                          title: Text(
+                            playlist.name,
+                            style: const TextStyle(color: ThemeConstants.textPrimary),
+                          ),
+                          onTap: () async {
+                            Navigator.pop(context);
+                            await _addSongToSpecificPlaylist(context, ref, playlist, song);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+Future<void> _addSongToSpecificPlaylist(BuildContext context, WidgetRef ref, dynamic playlist, Song song) async {
+  try {
+    await ref.read(playlistsProvider.notifier).addSongToPlaylist(playlist.id, song.id);
+    
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Added "${song.title}" to ${playlist.name}'),
+          backgroundColor: ThemeConstants.successColor,
+        ),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to add to playlist: $e'),
+          backgroundColor: ThemeConstants.errorColor,
+        ),
+      );
+    }
+  }
+}
+
+void _showCreatePlaylistAndAddDialog(BuildContext context, WidgetRef ref, Song song) {
+  final nameController = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: ThemeConstants.cardColor,
+      title: const Text('Create Playlist'),
+      content: TextField(
+        controller: nameController,
+        autofocus: true,
+        style: const TextStyle(color: ThemeConstants.textPrimary),
+        decoration: const InputDecoration(
+          hintText: 'Playlist name',
+          hintStyle: TextStyle(color: ThemeConstants.textMuted),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            final name = nameController.text.trim();
+            if (name.isNotEmpty) {
+              Navigator.pop(context);
+              final playlistId = await ref.read(playlistsProvider.notifier).createPlaylist(name);
+              if (playlistId != -1) {
+                final state = ref.read(playlistsProvider);
+                final playlist = state.userPlaylists.firstWhere((p) => p.id == playlistId);
+                await _addSongToSpecificPlaylist(context, ref, playlist, song);
+              }
+            }
+          },
+          child: const Text('Create & Add'),
+        ),
+      ],
     ),
   );
 }

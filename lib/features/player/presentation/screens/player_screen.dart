@@ -20,7 +20,6 @@ class PlayerScreen extends ConsumerStatefulWidget {
 }
 
 class _PlayerScreenState extends ConsumerState<PlayerScreen> {
-  bool? _isFavorite;
 
   Widget _buildPlaceholderArt() {
     return Stack(
@@ -70,6 +69,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     final positionData = ref.watch(positionDataProvider);
     final playerState = ref.watch(playerStateProvider);
     final timerState = ref.watch(sleepTimerProvider);
+    final isFavorite = ref.watch(currentSongFavoriteProvider);
 
     return Scaffold(
       backgroundColor: ThemeConstants.backgroundColor,
@@ -81,9 +81,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 child: Text('No song playing'),
               );
             }
-
-            // Initialize favorite status from song if not set
-            _isFavorite ??= song.isFavorite;
 
             return Column(
               children: [
@@ -207,19 +204,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           ],
                         ),
                       ),
-                      // Heart icon
+                       // Heart icon
                       IconButton(
                         onPressed: () async {
-                          // Toggle local state immediately for UI feedback
-                          setState(() {
-                            _isFavorite = !(_isFavorite ?? song.isFavorite);
-                          });
                           await ref.read(playerStateProvider.notifier).toggleFavorite();
                           ref.read(libraryProvider.notifier).loadLibrary();
                         },
                         icon: Icon(
-                          (_isFavorite ?? song.isFavorite) ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                          color: (_isFavorite ?? song.isFavorite) ? Colors.red : ThemeConstants.textSecondary,
+                          isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          color: isFavorite ? Colors.red : ThemeConstants.textSecondary,
                         ),
                         iconSize: 28,
                       ),

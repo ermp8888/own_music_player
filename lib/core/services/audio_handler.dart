@@ -275,6 +275,17 @@ class MyAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
           ? _songs[_currentIndex]
           : null;
 
+  /// Update the favorite state of a song in memory
+  void updateSongFavoriteState(int songId, bool isFavorite) {
+    final index = _songs.indexWhere((s) => s.id == songId);
+    if (index != -1) {
+      _songs[index] = _songs[index].copyWith(isFavorite: isFavorite);
+      if (index == _currentIndex) {
+        _updateCurrentMediaItem(_songs[index]);
+      }
+    }
+  }
+
   /// Combined stream for position, buffered position, and duration
   Stream<PositionData> get positionDataStream =>
       Rx.combineLatest3<Duration, Duration, Duration?, PositionData>(

@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/services/share_service.dart';
+import '../../../../core/helpers/favorite_helper.dart';
 import '../../../../shared/widgets/gradient_background.dart';
 import '../../../local_music/presentation/widgets/song_tile.dart';
 import '../../../player/presentation/providers/player_provider.dart';
@@ -11,9 +12,9 @@ import '../../../player/presentation/widgets/mini_player.dart';
 import '../../../local_music/presentation/providers/library_provider.dart';
 
 /// Provider for favorite songs
-final favoriteSongsProvider = FutureProvider<List<Song>>((ref) async {
+final favoriteSongsProvider = StreamProvider<List<Song>>((ref) {
   final database = ref.watch(databaseProvider);
-  return database.getFavorites();
+  return database.watchFavorites();
 });
 
 /// Liked Songs Screen showing all favorite songs
@@ -212,8 +213,10 @@ class LikedSongsScreen extends ConsumerWidget {
               title: const Text('Remove from Liked Songs'),
               onTap: () async {
                 Navigator.pop(context);
-                await ref.read(databaseProvider).toggleFavorite(song.id);
-                ref.invalidate(favoriteSongsProvider);
+                await FavoriteHelper.toggleFavorite(
+                  database: ref.read(databaseProvider),
+                  song: song,
+                );
                 ref.read(libraryProvider.notifier).loadLibrary();
               },
             ),

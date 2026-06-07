@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:drift/drift.dart' show Value;
+import 'package:flutter/foundation.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/services/audio_handler.dart';
+import '../../../../core/helpers/favorite_helper.dart';
 
 /// Database provider
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -132,9 +135,20 @@ class PlayerStateNotifier extends StateNotifier<PlayerState> {
   /// Toggle favorite for current song
   Future<void> toggleFavorite() async {
     final currentSong = _audioHandler.currentSong;
-    if (currentSong != null) {
-      await _database.toggleFavorite(currentSong.id);
-    }
+    if (currentSong == null) return;
+
+    final existing = await _database.getSongById(currentSong.id);
+    final newFavoriteState = existing == null ? true : !existing.isFavorite;
+
+    await FavoriteHelper.toggleFavorite(
+      database: _database,
+      song: currentSong,
+    );
+
+    _audioHandler.updateSongFavoriteState(
+      currentSong.id,
+      newFavoriteState,
+    );
   }
 }
 
@@ -181,4 +195,7 @@ final playerStateProvider =
 final miniPlayerDismissedProvider = StateProvider<bool>((ref) => false);
 
 /// Favorite status provider for current song - triggers UI updates when favorite changes
-final currentSongFavoriteProvider = StateProvider<bool>((ref) => false);
+final currentSongFavoriteProvider = Provider<bool>((ref) {
+  final currentSongAsync = ref.watch(currentSongProvider);
+  return currentSongAsync.value?.isFavorite ?? false;
+});

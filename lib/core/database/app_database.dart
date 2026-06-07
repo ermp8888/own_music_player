@@ -15,7 +15,7 @@ part 'app_database.g.dart';
 /// Main database class using Drift
 @DriftDatabase(tables: [Songs, Playlists, PlaylistSongs])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
   int get schemaVersion => AppConstants.databaseVersion;
@@ -134,6 +134,14 @@ class AppDatabase extends _$AppDatabase {
           ..where((t) => t.isFavorite.equals(true))
           ..orderBy([(t) => OrderingTerm.asc(t.title)]))
         .get();
+  }
+
+  /// Watch favorite songs
+  Stream<List<Song>> watchFavorites() {
+    return (select(songs)
+          ..where((t) => t.isFavorite.equals(true))
+          ..orderBy([(t) => OrderingTerm.asc(t.title)]))
+        .watch();
   }
 
   /// Watch all songs stream
