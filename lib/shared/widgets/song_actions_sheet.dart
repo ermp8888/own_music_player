@@ -93,7 +93,10 @@ class _SongActionsSheet extends ConsumerWidget {
               iconColor: song.isFavorite ? Colors.red : null,
               onTap: () async {
                 final db = ref.read(databaseProvider);
+                final existing = await db.getSongById(song.id);
+                final newFavoriteState = existing == null ? true : !existing.isFavorite;
                 await FavoriteHelper.toggleFavorite(database: db, song: song);
+                ref.read(audioHandlerProvider).updateSongFavoriteState(song.id, newFavoriteState);
                 if (context.mounted) Navigator.pop(context);
               },
             ),

@@ -137,9 +137,17 @@ class PlayerStateNotifier extends StateNotifier<PlayerState> {
     final currentSong = _audioHandler.currentSong;
     if (currentSong == null) return;
 
+    final existing = await _database.getSongById(currentSong.id);
+    final newFavoriteState = existing == null ? true : !existing.isFavorite;
+
     await FavoriteHelper.toggleFavorite(
       database: _database,
       song: currentSong,
+    );
+
+    _audioHandler.updateSongFavoriteState(
+      currentSong.id,
+      newFavoriteState,
     );
   }
 }
