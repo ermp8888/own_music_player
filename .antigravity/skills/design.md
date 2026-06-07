@@ -2,52 +2,27 @@
 
 ## Color System
 
-### Current Colors (detected from `theme_constants.dart`)
+### Current Colors (defined in `app_theme.dart`)
 ```
-Background:     #0D0F14
-Surface:        #131620
-Card:           #1A1D28
-Card Light:     #242836
-Primary:        #4D7CFE  (Blue accent)
-Primary Light:  #6B93FF
-Primary Dark:   #3A5FCC
-Accent:         #5B6EF7  (Purple-blue)
-Accent Light:   #7B8CFF
-Teal Accent:    #2D8B7A
-Coral Accent:   #F5A962
-Text Primary:   #FFFFFF
-Text Secondary: #9CA3AF
-Text Muted:     #6B7280
-Glass:          #1AFFFFFF (10% white)
-Glass Border:   #20FFFFFF (12.5% white)
-Success:        #10B981
-Error:          #EF4444
-Warning:        #F59E0B
-```
-
-### Target Colors (Phase 4 — Design Overhaul)
-```
-Background:     #0A0A0F
-Surface:        #141420
-Card:           #1C1C2E
-Primary:        #6C63FF
-Primary Light:  #8B85FF
-Secondary:      #00D4AA
-Text Primary:   #FFFFFF
-Text Secondary: #9B9BAA
-Text Disabled:  #4A4A5A
-Divider:        #2A2A3A
-Error:          #FF6B6B
+Background Primary:   #0A0A0F
+Background Surface:   #141420
+Background Card:      #1C1C2E
+Primary Accent:       #6C63FF
+Primary Accent Light: #8B85FF
+Secondary Accent:     #00D4AA
+Text Primary:         #FFFFFF
+Text Secondary:       #9B9BAA
+Text Disabled:        #4A4A5A
+Divider:              #2A2A3A
+Error:                #FF6B6B
+Success:              #4CAF50
+Warning:              #FFB300
 ```
 
 ## Typography
 
-### Current Font
-- **Family:** Poppins (via `google_fonts`)
-- **Applied globally** through `AppTheme._textTheme`
-
-### Target Font (Phase 4)
-- **Family:** Plus Jakarta Sans (Google Fonts)
+### Font Family
+- **Family:** Plus Jakarta Sans (via `google_fonts`)
 - **Scale:**
   ```
   Display:  28sp Bold
@@ -60,15 +35,7 @@ Error:          #FF6B6B
 
 ## Component Standards
 
-### Current Radii (from `ThemeConstants`)
-```
-Small:   8px   (radiusSmall)
-Medium:  16px  (radiusMedium)
-Large:   24px  (radiusLarge)
-XLarge:  32px  (radiusXLarge)
-```
-
-### Target Radii (Phase 4)
+### Radii
 ```
 Card radius:      16px
 Button radius:    12px
@@ -84,19 +51,19 @@ Cycle through these based on title first letter:
 #6C63FF, #FF6B6B, #00D4AA, #FF9800, #3D5AFE, #E91E8C
 ```
 
-### Current Album Gradients (from `home_screen.dart`)
+### Album Gradients (from `home_screen.dart`)
 ```dart
-tealGradient     → [#2D8B7A, #3DAA96]
-coral            → [#F5A962, #E8945A]
-cardGradient     → [#242836, #1A1D28]
-primaryGradient  → [#4D7CFE, #5B6EF7]
+tealGradient     → [#6C63FF, #00D4AA] (Primary to Secondary accent)
+orange           → [#F5A962, #E8945A] (Orange to Orange Light)
+cardGradient     → [#1C1C2E, #141420] (Card to Surface)
+primaryGradient  → [#6C63FF, #8B85FF] (Primary to Primary Light)
 ```
 
 ## Icon Style
 ```
 Size standard:  24px
-Color active:   ThemeConstants.primaryColor (#4D7CFE currently, #6C63FF target)
-Color inactive: ThemeConstants.textMuted (#6B7280 currently, #4A4A5A target)
+Color active:   AppTheme.primaryAccent (#6C63FF)
+Color inactive: AppTheme.textSecondary (#9B9BAA)
 Style:          Material Icons Rounded (e.g. Icons.play_arrow_rounded)
 ```
 
@@ -106,12 +73,11 @@ Style:          Material Icons Rounded (e.g. Icons.play_arrow_rounded)
 
 | Name | Colors | Usage |
 |------|--------|-------|
-| `primaryGradient` | `#4D7CFE → #5B6EF7` | FAB, buttons, badges, app icon |
-| `youtubeImportGradient` | `#4D5BD4 → #6B7BF7 → #8B9BFF` | YouTube Import promo card |
-| `backgroundGradient` | `#131620 → #0D0F14` | Screen background wrapper |
-| `cardGradient` | `#242836 → #1A1D28` | Card backgrounds |
-| `playerGradient` | `#1A1D28 → #0D0F14` | Player screen background |
-| `tealGradient` | `#2D8B7A → #3DAA96` | Album art placeholder, avatar |
+| `primaryGradient` | `#6C63FF → #8B85FF` | FAB, buttons, badges, app icon |
+| `youtubeImportGradient` | `#FF3E3E → #9E0000` | YouTube Import promo card |
+| `backgroundGradient` | `#0A0A0F → #141420` | Screen background wrapper |
+| `cardGradient` | `#1C1C2E → #141420` | Card backgrounds |
+| `tealGradient` | `#6C63FF → #00D4AA` | Album art placeholder, avatar |
 
 ## Shadows
 
@@ -156,10 +122,10 @@ List item appear:  FadeTransition 250ms
 ```dart
 Container(
   decoration: BoxDecoration(
-    color: ThemeConstants.glassColor,      // 10% white
-    borderRadius: BorderRadius.circular(ThemeConstants.radiusMedium),
+    color: Colors.white.withValues(alpha: 0.03),
+    borderRadius: BorderRadius.circular(16),
     border: Border.all(
-      color: ThemeConstants.glassBorderColor,  // 12.5% white
+      color: AppTheme.divider,
     ),
   ),
 )
@@ -181,9 +147,9 @@ Scaffold(backgroundColor: transparent)
 ## Bottom Sheet Pattern
 ```dart
 showModalBottomSheet(
-  backgroundColor: ThemeConstants.backgroundColor,
+  backgroundColor: AppTheme.backgroundPrimary,
   shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
   ),
   builder: (context) => Container(
     padding: EdgeInsets.symmetric(vertical: 20),
@@ -193,21 +159,21 @@ showModalBottomSheet(
 ```
 
 ## Song Tile Pattern
-- Leading: 48x48 album art (rounded 8px) with play overlay if currently playing
-- Title: Bold 14sp, primary text color (highlighted with primaryColor if playing)
-- Subtitle: Regular 12sp, secondary text color — "Artist • Album"
+- Leading: 48x48 album art (rounded 12px) with play overlay if currently playing
+- Title: Bold 14sp, primary text color (highlighted with primaryAccent if playing)
+- Subtitle: Regular 12sp, secondary text color — "Artist"
 - Trailing: Duration text + more_vert icon button
-- Container: Card color with glass border, highlighted border if currently playing
+- Container: Card color with custom border, highlighted border if currently playing
 
 ## Empty State Pattern
 ```
 Center
   └── Column(mainAxisAlignment: center)
-       ├── Icon (64px, textMuted color)
+       ├── Icon (64px, textSecondary color)
        ├── SizedBox(16)
        ├── Title text (16sp, bold, textSecondary)
        ├── SizedBox(8)
-       └── Subtitle text (14sp, textMuted)
+       └── Subtitle text (14sp, textSecondary)
 ```
 
 ## Spacing Standards

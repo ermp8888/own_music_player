@@ -27,29 +27,28 @@
 ```
 lib/
 ├── main.dart                                          # Entry point, AudioService init, ProviderScope
-├── core/                                              # Shared infrastructure
-│   ├── constants/
-│   │   ├── app_constants.dart                         # App name, version, supported formats, animation durations, storage keys
-│   │   └── theme_constants.dart                       # Colors, gradients, shadows, border radii
-│   ├── database/
-│   │   ├── app_database.dart                          # Drift database class + all queries
-│   │   ├── app_database.g.dart                        # Generated Drift code
-│   │   └── tables/
-│   │       ├── songs_table.dart                       # Songs table schema
-│   │       ├── playlists_table.dart                   # Playlists table schema
-│   │       └── playlist_songs_table.dart              # M2M join table
-│   ├── providers/
-│   │   └── download_location_provider.dart            # Download location management (SharedPreferences)
-│   ├── services/
-│   │   ├── audio_handler.dart                         # MyAudioHandler (background audio service)
-│   │   ├── file_scanner_service.dart                  # Local music file scanner
-│   │   ├── permission_service.dart                    # Runtime permissions
-│   │   └── share_service.dart                         # Share songs/app via share_plus
-│   ├── theme/
-│   │   └── app_theme.dart                             # Material 3 dark theme (ThemeData)
-│   └── utils/
-│       ├── formatters.dart                            # Duration formatting, etc.
-│       └── platform_utils.dart                        # Platform detection helpers
+  ├── core/                                              # Shared infrastructure
+  │   ├── constants/
+  │   │   └── app_constants.dart                         # App name, version, supported formats, animation durations, storage keys
+  │   ├── database/
+  │   │   ├── app_database.dart                          # Drift database class + all queries
+  │   │   ├── app_database.g.dart                        # Generated Drift code
+  │   │   └── tables/
+  │   │       ├── songs_table.dart                       # Songs table schema
+  │   │       ├── playlists_table.dart                   # Playlists table schema
+  │   │       └── playlist_songs_table.dart              # M2M join table
+  │   ├── providers/
+  │   │   └── download_location_provider.dart            # Download location management (SharedPreferences)
+  │   ├── services/
+  │   │   ├── audio_handler.dart                         # MyAudioHandler (background audio service)
+  │   │   ├── file_scanner_service.dart                  # Local music file scanner
+  │   │   ├── permission_service.dart                    # Runtime permissions
+  │   │   └── share_service.dart                         # Share songs/app via share_plus
+  │   ├── theme/
+  │   │   └── app_theme.dart                             # Modern dark theme design tokens & ThemeData
+  │   └── utils/
+  │       ├── formatters.dart                            # Duration formatting, etc.
+  │       └── platform_utils.dart                        # Platform detection helpers
 ├── features/                                          # Feature modules
 │   ├── home/
 │   │   └── presentation/screens/
@@ -147,7 +146,7 @@ lib/
 
 ## Coding Rules
 - Always use `const` constructors where possible
-- All colors must come from `ThemeConstants` — never hardcode hex values
+- All colors must come from AppTheme design tokens — never hardcode hex values
 - All app-wide strings/constants must be in `lib/core/constants/app_constants.dart`
 - Never use `print()` — use `debugPrint()` only
 - Always handle null safety properly
@@ -163,7 +162,7 @@ lib/
 - **Icons:** Material Icons only (no custom icon packages)
 - **Navigation:** Imperative `Navigator.push()` with `MaterialPageRoute`
 - **State management:** Riverpod (`StateNotifier` + `StateNotifierProvider` pattern)
-- **Font:** Currently `Poppins` via Google Fonts — will migrate to `Plus Jakarta Sans`
+- **Font:** Plus Jakarta Sans via Google Fonts
 
 ## What NOT to Do
 - Never remove existing features without explicit instruction

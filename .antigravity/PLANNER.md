@@ -110,65 +110,19 @@
 
 ## 📋 Pending Features
 
-### Phase 1 — Core Features
-- [ ] YouTube Shorts download support
-- [ ] Instagram Reels audio download
-- [ ] Platform auto-detection from URL
-- [ ] Quality filter (bitrate/duration/filesize)
-- [ ] Duplicate detection system
-- [ ] Keyword blacklist filter
-- [ ] Hindu devotional content filter
-- [ ] Gemini AI filter for edge cases
-- [ ] Filter Settings screen with toggles
-
-### Phase 2 — AI Features
-- [ ] Gemini Smart Search (natural language)
-- [ ] Auto Mood Tagging per song
-- [ ] Auto Playlist Generator by mood
-
-### Phase 3 — Audio & UX
-- [ ] 3-band Equalizer (Bass/Mid/Treble)
-- [ ] Sleep Timer with fade-out
-- [ ] Voice Search
-- [ ] Song reporting system
-- [ ] Share song feature (enhanced — already basic version exists)
-
-### Phase 4 — Design Overhaul
-- [ ] New app icon (headphone + arrow concept)
-- [ ] Unified color system (#6C63FF primary)
-- [ ] Plus Jakarta Sans typography
-- [ ] Song metadata cleaner (title/artist)
-- [ ] Letter avatar for song thumbnails
-- [ ] Home screen redesign
-- [ ] Import screen redesign
-- [ ] Library screen redesign
-- [ ] Explore screen polish
-- [ ] Settings screen redesign
-- [ ] Now Playing screen polish
-- [ ] Dynamic album color extraction
+### Phase 5 — Additional Features & Refinement
+- [ ] Queue display implementation
+- [ ] Lyrics sync (karaoke style)
+- [ ] Offline AI DJ crossfade
+- [ ] User accounts / cloud sync
+- [ ] Android widget for player
+- [ ] Car mode UI
 
 ---
 
-## 🐛 Known Bugs
+## 🐛 Known Bugs & Limitations
 - [ ] Song titles showing HTML entities (`&quot;` `&amp;`)
 - [ ] Song titles showing URL-encoded format (`word+word+word`)
-- [ ] Artist showing "Unknown Artist" for most songs (file scanner extracts title from filename only — no metadata parsing)
-- [ ] App icon still named "MyMusicApp" not "DownTune" (in `AppConstants.appName`, notification channel, launcher config)
-- [ ] `home_screen.dart` is 590 lines — exceeds 300-line max rule
-- [ ] `youtube_import_screen.dart` is 1069 lines — significantly exceeds 300-line max rule
-- [ ] `online_music_screen.dart` is 797 lines — significantly exceeds 300-line max rule
-- [ ] `player_screen.dart` is 513 lines — exceeds 300-line max rule
-- [ ] Some hardcoded color values exist (e.g., `Color(0xFF9B7FE6)` in home_screen, `Color(0xFFFF4757)` in downloads_screen)
-- [ ] Queue display not implemented (TODO placeholder in player screen)
-- [ ] Lyrics functionality not implemented (button exists but no action)
-- [ ] Add to Playlist from player screen not implemented (TODO placeholder)
-- [ ] Audio quality setting is static/non-functional
-
----
-
-## 💡 Future Ideas (not started)
-- Lyrics sync (karaoke style)
-- Offline AI DJ crossfade
-- User accounts / cloud sync
-- Android widget for player
-- Car mode UI
+- [ ] Artist showing "Unknown Artist" for most local songs (file scanner extracts title from filename only — no metadata parsing)
+- [ ] File lengths: some screens (e.g. `home_screen.dart`, `youtube_import_screen.dart`, `online_music_screen.dart`) exceed the 300-line max rule due to embedded widgets that can be further componentized.
+- [ ] Audio quality setting is static/non-functional.

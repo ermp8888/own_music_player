@@ -35,24 +35,25 @@
   - Tab 3: Settings (inline `SettingsScreen`)
 
 ## Theming
-- **Single source of truth:** `lib/core/theme/app_theme.dart` → `AppTheme.darkTheme`
-- **Color constants:** `lib/core/constants/theme_constants.dart` → `ThemeConstants` class
-- **Always use** `ThemeConstants.primaryColor`, `ThemeConstants.cardColor`, etc. — **never** hardcode hex
-- **Dark theme only** for now
-- **Font:** Currently `Poppins` via `google_fonts` — to be migrated to `Plus Jakarta Sans`
+- **Single source of truth:** `lib/core/theme/app_theme.dart` → `AppTheme` class definitions
+- **Color constants:** Migrated to `AppTheme`
+- **Always use** `AppTheme` tokenized colors (e.g. `AppTheme.primaryAccent`, `AppTheme.backgroundCard`, `AppTheme.textSecondary`) — **never** hardcode hex values
+- **Dark theme only**
+- **Font:** `Plus Jakarta Sans` via `google_fonts`
 - **Material 3:** `useMaterial3: true` is enabled
-- **Current Color Palette:**
-  - Primary: `#4D7CFE` (Blue accent)
-  - Accent: `#5B6EF7` (Purple-blue)
-  - Background: `#0D0F14`
-  - Surface: `#131620`
-  - Card: `#1A1D28`
+- **Color Palette:**
+  - Background Primary: `#0A0A0F`
+  - Background Surface: `#141420`
+  - Background Card: `#1C1C2E`
+  - Primary Accent: `#6C63FF`
+  - Primary Accent Light: `#8B85FF`
+  - Secondary Accent: `#00D4AA`
   - Text Primary: `#FFFFFF`
-  - Text Secondary: `#9CA3AF`
-  - Text Muted: `#6B7280`
-  - Success: `#10B981`
-  - Error: `#EF4444`
-  - Warning: `#F59E0B`
+  - Text Secondary: `#9B9BAA`
+  - Divider: `#2A2A3A`
+  - Success: `#4CAF50`
+  - Error: `#FF6B6B`
+  - Warning: `#FFB300`
 
 ## Audio Architecture
 - **Playback engine:** `just_audio` (`AudioPlayer` class)
@@ -92,7 +93,7 @@
 - **Services:** `audio_handler.dart`, `file_scanner_service.dart`, `share_service.dart`
 - **Models:** Drift generates models from table definitions (Song, Playlist, PlaylistSong)
 - **Tables:** `songs_table.dart`, `playlists_table.dart`, `playlist_songs_table.dart`
-- **Constants:** `app_constants.dart`, `theme_constants.dart`
+- **Constants:** `app_constants.dart`, `app_theme.dart` (theme configuration)
 - **Repositories:** `online_music_repository.dart`
 
 ## Responsive Design
