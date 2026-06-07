@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../providers/player_provider.dart';
+import '../../../../core/utils/metadata_cleaner.dart';
 import '../screens/player_screen.dart';
 import '../../../../main.dart';
 
@@ -178,7 +179,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                song.title,
+                                MetadataCleaner.cleanTitle(song.title),
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
@@ -188,7 +189,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Text(
-                                song.artist,
+                                MetadataCleaner.cleanArtist(song.artist),
                                 style: TextStyle(
                                   color: ThemeConstants.primaryColor,
                                   fontSize: 12,

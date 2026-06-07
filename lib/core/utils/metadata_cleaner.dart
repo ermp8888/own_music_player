@@ -1,47 +1,75 @@
 /// Metadata cleaner utility for song titles and artist names.
-///
-/// Cleans up common issues from YouTube/online sources:
-/// - HTML entities (&amp;, &quot;, etc.)
-/// - URL encoding (+, %20, etc.)
-/// - Suffixes like (Official Video), [HD], (Lyrics)
-/// - Extra whitespace
-/// - "Artist - Title" format extraction
-library;
+class MetadataCleaner {
+  MetadataCleaner._();
 
-/// Cleans a song title by removing common junk.
-String cleanSongTitle(String title) {
-  var clean = title;
+  static String cleanTitle(String raw) {
+    var cleaned = raw
+        .replaceAll('+', ' ')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&apos;', "'")
+        .replaceAll(RegExp(r'\(Official Video\)', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\(Full Video\)', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\(Audio\)', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\(Lyric Video\)', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\(HD\)', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    return cleaned;
+  }
 
-  // 1. Decode HTML entities
-  clean = _decodeHtmlEntities(clean);
+  static String cleanArtist(String? artist) {
+    if (artist == null || artist.trim().isEmpty || artist == 'Unknown Artist') {
+      return 'Unknown Artist';
+    }
+    return cleanTitle(artist);
+  }
 
-  // 2. Replace URL encoding: + → space
-  clean = clean.replaceAll('+', ' ');
+  static Map<String, String> extractFromFilename(String filename) {
+    if (filename.isEmpty) {
+      return {
+        'artist': 'Unknown Artist',
+        'title': '',
+      };
+    }
+    if (!filename.contains(' - ')) {
+      return {
+        'artist': 'Unknown Artist',
+        'title': filename.trim(),
+      };
+    }
+    final index = filename.indexOf(' - ');
+    final artist = filename.substring(0, index).trim();
+    final title = filename.substring(index + 3).trim();
+    return {
+      'artist': artist.isEmpty ? 'Unknown Artist' : artist,
+      'title': title,
+    };
+  }
 
-  // 3. Remove common suffixes/tags in parentheses and brackets
-  clean = clean.replaceAll(
-    RegExp(
-      r'\s*[\(\[]\s*(official\s*(video|audio|music\s*video|lyric\s*video|hd|4k)|'
-      r'lyrics?|lyric\s*video|hd|4k|uhd|full\s*(song|video)|audio|'
-      r'video\s*song|visualizer|animated|extended|remastered)\s*[\)\]]',
-      caseSensitive: false,
-    ),
-    '',
-  );
+  /// Cleans both title and artist and tries to extract artist from title if necessary
+  static Map<String, String> cleanSong(String title, String? artist) {
+    var cleanTitleStr = cleanTitle(title);
+    var cleanArtistStr = cleanArtist(artist);
 
-  // 4. Remove trailing " - YouTube" or similar platform suffixes
-  clean = clean.replaceAll(RegExp(r'\s*-\s*YouTube\s*$', caseSensitive: false), '');
+    if (cleanArtistStr == 'Unknown Artist' && cleanTitleStr.contains(' - ')) {
+      final extracted = extractFromFilename(cleanTitleStr);
+      cleanArtistStr = cleanArtist(extracted['artist']);
+      cleanTitleStr = cleanTitle(extracted['title'] ?? '');
+    }
 
-  // 5. Normalize whitespace
-  clean = clean.replaceAll(RegExp(r'\s+'), ' ').trim();
-
-  return clean;
+    return {
+      'title': cleanTitleStr,
+      'artist': cleanArtistStr,
+    };
+  }
 }
 
-/// Extracts the artist from an "Artist - Title" formatted string.
-/// Returns null if no separator found.
+/// Backward compatibility global aliases
+String cleanSongTitle(String title) => MetadataCleaner.cleanTitle(title);
+String cleanArtist(String? artist) => MetadataCleaner.cleanArtist(artist);
+
 String? extractArtistFromTitle(String title) {
-  // Common separators: " - ", " – ", " — ", " | "
   final separators = [' - ', ' – ', ' — ', ' | '];
   for (final sep in separators) {
     if (title.contains(sep)) {
@@ -54,8 +82,6 @@ String? extractArtistFromTitle(String title) {
   return null;
 }
 
-/// Extracts the song title from an "Artist - Title" formatted string.
-/// Returns the cleaned full string if no separator found.
 String extractTitleFromArtistTitle(String fullTitle) {
   final separators = [' - ', ' – ', ' — ', ' | '];
   for (final sep in separators) {
@@ -67,40 +93,4 @@ String extractTitleFromArtistTitle(String fullTitle) {
     }
   }
   return cleanSongTitle(fullTitle);
-}
-
-/// Cleans an artist name.
-String cleanArtist(String artist) {
-  var clean = artist;
-
-  // 1. Decode HTML entities
-  clean = _decodeHtmlEntities(clean);
-
-  // 2. Replace + with space
-  clean = clean.replaceAll('+', ' ');
-
-  // 3. Remove " - Topic" suffix (YouTube auto-generated channels)
-  clean = clean.replaceAll(RegExp(r'\s*-\s*Topic\s*$', caseSensitive: false), '');
-
-  // 4. Remove "VEVO" suffix
-  clean = clean.replaceAll(RegExp(r'VEVO\s*$', caseSensitive: false), '');
-
-  // 5. Normalize whitespace
-  clean = clean.replaceAll(RegExp(r'\s+'), ' ').trim();
-
-  return clean;
-}
-
-/// Decode common HTML entities.
-String _decodeHtmlEntities(String text) {
-  return text
-      .replaceAll('&amp;', '&')
-      .replaceAll('&lt;', '<')
-      .replaceAll('&gt;', '>')
-      .replaceAll('&quot;', '"')
-      .replaceAll('&#39;', "'")
-      .replaceAll('&apos;', "'")
-      .replaceAll('&#x27;', "'")
-      .replaceAll('&#x2F;', '/')
-      .replaceAll('&nbsp;', ' ');
 }

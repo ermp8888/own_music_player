@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/services/share_service.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/metadata_cleaner.dart';
 import '../../../local_music/presentation/providers/library_provider.dart';
 import '../providers/player_provider.dart';
 import '../widgets/waveform_visualization.dart';
@@ -184,7 +185,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              song.title,
+                              MetadataCleaner.cleanTitle(song.title),
                               style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
@@ -195,7 +196,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                             ).animate().fadeIn().slideY(begin: 0.2, end: 0),
                             const SizedBox(height: 4),
                             Text(
-                              song.artist,
+                              MetadataCleaner.cleanArtist(song.artist),
                               style: TextStyle(
                                 fontSize: 14,
                                 color: ThemeConstants.textSecondary,

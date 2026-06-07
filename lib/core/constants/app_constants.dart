@@ -2,7 +2,7 @@
 class AppConstants {
   AppConstants._();
 
-  static const String appName = 'MyMusicApp';
+  static const String appName = 'DownTune';
   static const String appVersion = '1.0.0';
 
   // Supported audio formats

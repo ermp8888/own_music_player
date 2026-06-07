@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/services/share_service.dart';
 import '../../../../core/helpers/favorite_helper.dart';
@@ -118,12 +119,12 @@ class DownloadsScreen extends ConsumerWidget {
             height: 100,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFFFF4757), Color(0xFFFF6B81)],
+                colors: [AppTheme.redAccent, AppTheme.redAccentLight],
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFFF4757).withValues(alpha: 0.3),
+                  color: AppTheme.redAccent.withValues(alpha: 0.3),
                   blurRadius: 20,
                   spreadRadius: 2,
                 ),

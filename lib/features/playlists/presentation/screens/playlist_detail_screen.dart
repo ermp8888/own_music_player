@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/gradient_background.dart';
 import '../../../local_music/presentation/providers/library_provider.dart';
 import '../../../local_music/presentation/widgets/song_tile.dart';
@@ -156,7 +157,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
               gradient: isSmartPlaylist
                   ? ThemeConstants.primaryGradient
                   : const LinearGradient(
-                      colors: [Color(0xFF10B981), Color(0xFF34D399)],
+                      colors: [AppTheme.greenAccent, AppTheme.greenAccentLight],
                     ),
               borderRadius: BorderRadius.circular(24),
               boxShadow: ThemeConstants.glowShadow,

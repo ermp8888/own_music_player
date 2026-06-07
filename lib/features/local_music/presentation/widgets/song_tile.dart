@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/theme_constants.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/metadata_cleaner.dart';
 import '../../../../shared/animations/scale_tap_animation.dart';
 
 /// Song tile widget for list display
@@ -78,7 +79,7 @@ class SongTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    song.title,
+                    MetadataCleaner.cleanTitle(song.title),
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
@@ -94,7 +95,7 @@ class SongTile extends StatelessWidget {
                     children: [
                       Flexible(
                         child: Text(
-                          song.artist,
+                          MetadataCleaner.cleanArtist(song.artist),
                           style: TextStyle(
                             color: ThemeConstants.textSecondary,
                             fontSize: 13,

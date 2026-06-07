@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/gradient_background.dart';
 import '../../../../shared/widgets/glass_container.dart';
 import '../../../../shared/animations/scale_tap_animation.dart';
@@ -145,14 +146,14 @@ class PlaylistsScreen extends ConsumerWidget {
     if (isSmartPlaylist) {
       if (playlist.smartPlaylistType == 'recently_played') {
         icon = Icons.history_rounded;
-        gradientColors = [const Color(0xFF6366F1), const Color(0xFF8B5CF6)];
+        gradientColors = [AppTheme.blueAccent, AppTheme.blueAccentLight];
       } else {
         icon = Icons.trending_up_rounded;
-        gradientColors = [const Color(0xFFEC4899), const Color(0xFFF472B6)];
+        gradientColors = [AppTheme.pinkAccent, AppTheme.pinkAccentLight];
       }
     } else {
       icon = Icons.playlist_play_rounded;
-      gradientColors = [const Color(0xFF10B981), const Color(0xFF34D399)];
+      gradientColors = [AppTheme.greenAccent, AppTheme.greenAccentLight];
     }
 
     return Padding(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/services/share_service.dart';
 import '../../../../core/helpers/favorite_helper.dart';
@@ -103,12 +104,12 @@ class LikedSongsScreen extends ConsumerWidget {
             height: 100,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF9B7FE6), Color(0xFFB49AFF)],
+                colors: [AppTheme.purpleAccent, AppTheme.purpleAccentLight],
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF9B7FE6).withValues(alpha: 0.3),
+                  color: AppTheme.purpleAccent.withValues(alpha: 0.3),
                   blurRadius: 20,
                   spreadRadius: 2,
                 ),

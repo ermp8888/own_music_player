@@ -1,61 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:my_music_app/core/theme/app_theme.dart';
 
-/// Theme constants - Colors and gradients for the app
+/// Theme constants - Colors and gradients for the app, delegating to AppTheme
 class ThemeConstants {
   ThemeConstants._();
 
-  // Primary colors - Blue accent
-  static const Color primaryColor = Color(0xFF4D7CFE); // Blue accent
-  static const Color primaryLight = Color(0xFF6B93FF);
-  static const Color primaryDark = Color(0xFF3A5FCC);
+  // Primary colors
+  static const Color primaryColor = AppTheme.primaryAccent;
+  static const Color primaryLight = AppTheme.primaryAccentLight;
+  static const Color primaryDark = AppTheme.primaryAccent;
 
   // Accent colors
-  static const Color accentColor = Color(0xFF5B6EF7); // Purple-blue
-  static const Color accentLight = Color(0xFF7B8CFF);
-  static const Color accentDark = Color(0xFF4558CC);
+  static const Color accentColor = AppTheme.primaryAccent;
+  static const Color accentLight = AppTheme.primaryAccentLight;
+  static const Color accentDark = AppTheme.primaryAccent;
 
-  // Teal accent for album art
-  static const Color tealAccent = Color(0xFF2D8B7A);
-  static const Color tealLight = Color(0xFF3DAA96);
+  // Teal accent
+  static const Color tealAccent = AppTheme.secondaryAccent;
+  static const Color tealLight = AppTheme.secondaryAccent;
   
   // Orange/Coral accent
-  static const Color coralAccent = Color(0xFFF5A962);
+  static const Color coralAccent = AppTheme.secondaryAccent;
   
-  // Background colors - Darker theme
-  static const Color backgroundColor = Color(0xFF0D0F14);
-  static const Color surfaceColor = Color(0xFF131620);
-  static const Color cardColor = Color(0xFF1A1D28);
-  static const Color cardColorLight = Color(0xFF242836);
+  // Background colors
+  static const Color backgroundColor = AppTheme.backgroundPrimary;
+  static const Color surfaceColor = AppTheme.backgroundSurface;
+  static const Color cardColor = AppTheme.backgroundCard;
+  static const Color cardColorLight = AppTheme.backgroundCard;
 
   // Text colors
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textMuted = Color(0xFF6B7280);
+  static const Color textPrimary = AppTheme.textPrimary;
+  static const Color textSecondary = AppTheme.textSecondary;
+  static const Color textMuted = AppTheme.textSecondary;
 
   // Status colors
-  static const Color successColor = Color(0xFF10B981);
-  static const Color errorColor = Color(0xFFEF4444);
-  static const Color warningColor = Color(0xFFF59E0B);
+  static const Color successColor = AppTheme.success;
+  static const Color errorColor = AppTheme.error;
+  static const Color warningColor = AppTheme.secondaryAccent;
 
   // Glassmorphism
   static const Color glassColor = Color(0x1AFFFFFF);
-  static const Color glassBorderColor = Color(0x20FFFFFF);
+  static const Color glassBorderColor = AppTheme.divider;
   static const double glassBlur = 10.0;
 
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [primaryColor, accentColor],
+    colors: [primaryColor, primaryLight],
   );
 
   static const LinearGradient youtubeImportGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF4D5BD4),
-      Color(0xFF6B7BF7),
-      Color(0xFF8B9BFF),
+      AppTheme.primaryAccent,
+      AppTheme.primaryAccentLight,
     ],
   );
 
@@ -63,8 +63,8 @@ class ThemeConstants {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
-      Color(0xFF131620),
-      Color(0xFF0D0F14),
+      AppTheme.backgroundSurface,
+      AppTheme.backgroundPrimary,
     ],
   );
 
@@ -72,8 +72,8 @@ class ThemeConstants {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF242836),
-      Color(0xFF1A1D28),
+      AppTheme.backgroundCard,
+      AppTheme.backgroundSurface,
     ],
   );
 
@@ -81,8 +81,8 @@ class ThemeConstants {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
-      Color(0xFF1A1D28),
-      Color(0xFF0D0F14),
+      AppTheme.backgroundCard,
+      AppTheme.backgroundPrimary,
     ],
   );
 
@@ -90,31 +90,18 @@ class ThemeConstants {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF2D8B7A),
-      Color(0xFF3DAA96),
+      AppTheme.secondaryAccent,
+      AppTheme.primaryAccent,
     ],
   );
 
   // Shadows
-  static List<BoxShadow> cardShadow = [
-    BoxShadow(
-      color: Colors.black.withValues(alpha: 0.3),
-      blurRadius: 20,
-      offset: const Offset(0, 10),
-    ),
-  ];
-
-  static List<BoxShadow> glowShadow = [
-    BoxShadow(
-      color: primaryColor.withValues(alpha: 0.3),
-      blurRadius: 20,
-      spreadRadius: 2,
-    ),
-  ];
+  static List<BoxShadow> cardShadow = AppTheme.cardShadow;
+  static List<BoxShadow> glowShadow = AppTheme.activeShadow;
 
   // Border radius
-  static const double radiusSmall = 8.0;
-  static const double radiusMedium = 16.0;
-  static const double radiusLarge = 24.0;
-  static const double radiusXLarge = 32.0;
+  static const double radiusSmall = AppTheme.sm;
+  static const double radiusMedium = AppTheme.cardRadius;
+  static const double radiusLarge = AppTheme.bottomSheetRadius;
+  static const double radiusXLarge = AppTheme.bottomSheetRadius;
 }

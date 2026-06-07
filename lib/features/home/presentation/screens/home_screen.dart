@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/constants/theme_constants.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/helpers/greeting_helper.dart';
+import '../../../../core/helpers/avatar_color_helper.dart';
 import '../../../../shared/widgets/gradient_background.dart';
 import '../../../../shared/widgets/bottom_nav_bar.dart';
 import '../../../local_music/presentation/providers/library_provider.dart';
@@ -156,34 +159,60 @@ class _HomeContent extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context, WidgetRef ref) {
+    final avatarColor = AvatarColorHelper.getColor("User");
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Row(
         children: [
           // Avatar
           Container(
-            width: 40,
-            height: 40,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: ThemeConstants.tealGradient,
+              color: avatarColor,
+              boxShadow: [
+                BoxShadow(
+                  color: avatarColor.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: const Icon(
-              Icons.person_rounded,
-              color: Colors.white,
-              size: 20,
+            child: const Center(
+              child: Text(
+                'U',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           // Greeting
-          const Expanded(
-            child: Text(
-              'Welcome to DownTune',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: ThemeConstants.textPrimary,
-              ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  GreetingHelper.getGreeting(),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: ThemeConstants.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Your personal music hub',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: ThemeConstants.textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
           // Search icon
@@ -286,7 +315,7 @@ class _HomeContent extends ConsumerWidget {
                   child: Text(
                     'Import Now',
                     style: TextStyle(
-                      color: Color(0xFF4D5BD4),
+                      color: AppTheme.primaryAccent,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -448,7 +477,7 @@ class _HomeContent extends ConsumerWidget {
   LinearGradient _getAlbumGradient(int index) {
     final gradients = [
       ThemeConstants.tealGradient,
-      const LinearGradient(colors: [Color(0xFFF5A962), Color(0xFFE8945A)]),
+      const LinearGradient(colors: [AppTheme.orangeAccent, AppTheme.orangeAccentLight]),
       ThemeConstants.cardGradient,
       ThemeConstants.primaryGradient,
     ];
@@ -478,7 +507,7 @@ class _HomeContent extends ConsumerWidget {
                   context,
                   icon: Icons.favorite_rounded,
                   label: 'Liked Songs',
-                  color: const Color(0xFF9B7FE6),
+                  color: AppTheme.purpleAccent,
                   onTap: () {
                     Navigator.push(
                       context,
