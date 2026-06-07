@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/theme_constants.dart';
 import '../../core/database/app_database.dart';
 import '../../core/services/share_service.dart';
+import '../../core/helpers/favorite_helper.dart';
 import '../../features/player/presentation/providers/player_provider.dart';
 import '../../features/local_music/presentation/providers/library_provider.dart';
 import '../../features/playlists/presentation/screens/playlists_screen.dart';
@@ -92,7 +93,7 @@ class _SongActionsSheet extends ConsumerWidget {
               iconColor: song.isFavorite ? Colors.red : null,
               onTap: () async {
                 final db = ref.read(databaseProvider);
-                await db.toggleFavorite(song.id);
+                await FavoriteHelper.toggleFavorite(database: db, song: song);
                 if (context.mounted) Navigator.pop(context);
               },
             ),

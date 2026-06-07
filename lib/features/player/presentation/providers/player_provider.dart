@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/services/audio_handler.dart';
+import '../../../../core/helpers/favorite_helper.dart';
 
 /// Database provider
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -136,33 +137,10 @@ class PlayerStateNotifier extends StateNotifier<PlayerState> {
     final currentSong = _audioHandler.currentSong;
     if (currentSong == null) return;
 
-    try {
-      // Check if song exists in local DB
-      final existing = await _database.getSongById(currentSong.id);
-
-      if (existing == null) {
-        // Online song not in DB yet — insert it first
-        // then set isFavorite = true on insert
-        await _database.upsertSong(
-          SongsCompanion.insert(
-            id: Value(currentSong.id),
-            title: currentSong.title,
-            artist: Value(currentSong.artist),
-            album: Value(currentSong.album),
-            duration: Value(currentSong.duration),
-            filePath: currentSong.filePath,
-            albumArtPath: Value(currentSong.albumArtPath),
-            isFavorite: const Value(true),
-          ),
-        );
-      } else {
-        // Song exists — just toggle
-        await _database.toggleFavorite(currentSong.id);
-      }
-    } catch (e) {
-      debugPrint('[LikedSongs] toggleFavorite error: $e');
-      rethrow;
-    }
+    await FavoriteHelper.toggleFavorite(
+      database: _database,
+      song: currentSong,
+    );
   }
 }
 
