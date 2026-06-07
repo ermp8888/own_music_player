@@ -195,4 +195,7 @@ final playerStateProvider =
 final miniPlayerDismissedProvider = StateProvider<bool>((ref) => false);
 
 /// Favorite status provider for current song - triggers UI updates when favorite changes
-final currentSongFavoriteProvider = StateProvider<bool>((ref) => false);
+final currentSongFavoriteProvider = Provider<bool>((ref) {
+  final currentSongAsync = ref.watch(currentSongProvider);
+  return currentSongAsync.value?.isFavorite ?? false;
+});
