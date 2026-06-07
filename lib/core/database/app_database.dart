@@ -136,6 +136,14 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
+  /// Watch favorite songs
+  Stream<List<Song>> watchFavorites() {
+    return (select(songs)
+          ..where((t) => t.isFavorite.equals(true))
+          ..orderBy([(t) => OrderingTerm.asc(t.title)]))
+        .watch();
+  }
+
   /// Watch all songs stream
   Stream<List<Song>> watchAllSongs() {
     return (select(songs)..orderBy([(t) => OrderingTerm.asc(t.title)])).watch();
